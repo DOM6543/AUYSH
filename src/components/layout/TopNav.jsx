@@ -76,6 +76,17 @@ export default function TopNav() {
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
+        {/* Direct Switch to Patient Kiosk */}
+        <button
+          type="button"
+          onClick={() => setPortalMode("kiosk")}
+          className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition active:scale-95"
+          title="Launch Patient Touch Kiosk Interface"
+        >
+          <span>🖥️</span>
+          <span className="hidden sm:inline">Patient Kiosk</span>
+        </button>
+
         {/* Top Right Language Selector */}
         <LanguageSelector variant="light" />
 

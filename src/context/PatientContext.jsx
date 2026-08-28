@@ -40,7 +40,37 @@ export function PatientProvider({ children }) {
   const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
 
   // Portal Authentication Mode: 'login' | 'doctor' | 'kiosk'
-  const [portalMode, setPortalMode] = useState("login");
+  const getInitialPortalMode = () => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (hash.includes("kiosk") || search.includes("kiosk")) return "kiosk";
+      if (hash.includes("doctor") || search.includes("doctor")) return "doctor";
+    }
+    return "login";
+  };
+
+  const [portalMode, setPortalModeState] = useState(getInitialPortalMode);
+
+  const setPortalMode = (mode) => {
+    setPortalModeState(mode);
+    if (typeof window !== "undefined") {
+      if (mode === "kiosk") window.location.hash = "kiosk";
+      else if (mode === "doctor") window.location.hash = "doctor";
+      else window.location.hash = "";
+    }
+  };
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes("kiosk")) setPortalModeState("kiosk");
+      else if (hash.includes("doctor")) setPortalModeState("doctor");
+      else if (!hash) setPortalModeState("login");
+    };
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
   const [currentUser, setCurrentUser] = useState({
     name: "Dr. Ramesh Kumar",
     role: "Chief Physician & OPD Head",
