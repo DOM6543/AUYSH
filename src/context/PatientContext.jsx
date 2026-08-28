@@ -9,6 +9,7 @@ import {
   acceptClinicalSummaryInFirebase,
   rejectClinicalSummaryInFirebase,
   addDocumentToFirebase,
+  addClinicalNoteToFirebase,
   updateVitalsInFirebase,
   submitKioskIntakeToFirebase
 } from "../services/firebaseService";
@@ -242,6 +243,27 @@ export function PatientProvider({ children }) {
     }
   };
 
+  const addClinicalNote = async (noteText, category = "Clinical Progress Note") => {
+    if (!patient || !noteText?.trim()) return;
+    const newNote = {
+      author: currentUser?.name || patient.doctor?.name || "Dr. Ramesh Kumar",
+      role: currentUser?.role || "Consultant Physician",
+      department: currentUser?.department || clinic || "AIIMS OPD",
+      category,
+      content: noteText.trim(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    };
+
+    try {
+      await addClinicalNoteToFirebase(patient.id, newNote);
+      showToast("Clinical progress note saved to patient record in Firebase!", "success");
+    } catch (err) {
+      console.error("Clinical note error:", err);
+      showToast("Failed to save note to Firebase.", "error");
+    }
+  };
+
   const submitKioskIntake = async (payload) => {
     try {
       const newPatientId = await submitKioskIntakeToFirebase(payload);
@@ -345,6 +367,7 @@ export function PatientProvider({ children }) {
         handleRejectSummary,
         updateSummaryData,
         uploadNewDocument,
+        addClinicalNote,
         refreshVitals,
         submitKioskIntake,
         chatMessages,

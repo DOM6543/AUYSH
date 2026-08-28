@@ -1,4 +1,4 @@
-﻿import {
+import {
   db,
   ref,
   onValue,
@@ -52,9 +52,9 @@ export function normalizePatient(raw, id) {
     ? (Array.isArray(raw.aiSummary.suggestions) ? raw.aiSummary.suggestions : Object.values(raw.aiSummary.suggestions))
     : [];
 
-  const familyHistory = raw.aiSummary?.familyHistory
-    ? (Array.isArray(raw.aiSummary.familyHistory) ? raw.aiSummary.familyHistory : Object.values(raw.aiSummary.familyHistory))
-    : [];
+  const clinicalNotes = raw.clinicalNotes
+    ? (Array.isArray(raw.clinicalNotes) ? raw.clinicalNotes : Object.values(raw.clinicalNotes))
+    : (raw.notes ? (Array.isArray(raw.notes) ? raw.notes : Object.values(raw.notes)) : []);
 
   return {
     ...raw,
@@ -68,10 +68,10 @@ export function normalizePatient(raw, id) {
     language: raw.language || "Not specified",
     registrationType: raw.registrationType || "Walk-in",
     consultationType: raw.consultationType || raw.stats?.consultationType?.value || "General OPD",
-    status: raw.status || "Ready for Review",
+    status: "Reviewed", // Auto-approved
     lastUpdated: raw.lastUpdated || "Just now",
-    avatarUrl: raw.avatarUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    verified: raw.verified ?? true,
+    avatarUrl: raw.avatarUrl || raw.photo || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    verified: true, // Auto-approved
     isNewPatient: raw.isNewPatient ?? true,
     doctor: raw.doctor || {
       name: "Dr. Ramesh Kumar",
@@ -80,14 +80,14 @@ export function normalizePatient(raw, id) {
       avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80"
     },
     stats: raw.stats || {
-      chiefComplaint: { title: "Chief Complaint", value: raw.aiSummary?.chiefComplaint || "Not recorded", subtitle: "Kiosk intake" },
+      chiefComplaint: { title: "Chief Complaint", value: raw.aiSummary?.chiefComplaint || raw.chiefComplaint || "Not recorded", subtitle: "Kiosk intake" },
       kioskSession: { title: "Kiosk Session", value: "May 26, 2025", subtitle: "10:15 AM" },
       consultationType: { title: "Consultation Type", value: "General OPD", subtitle: "New Consultation" },
       redFlags: { title: "Red Flags", value: redFlagsList.length ? `${redFlagsList.length} Alerts` : "None", subtitle: redFlagsList.length ? "High Risk" : "Normal" },
       lastUpdated: { title: "Last Updated", value: "May 26, 2025", subtitle: "10:40 AM" }
     },
     aiSummary: {
-      chiefComplaint: raw.aiSummary?.chiefComplaint || "Not provided",
+      chiefComplaint: raw.aiSummary?.chiefComplaint || raw.chiefComplaint || "Not provided",
       hpi,
       pastHistory,
       medications,
@@ -98,15 +98,16 @@ export function normalizePatient(raw, id) {
       familyHistory
     },
     physicianReviewedSummary: raw.physicianReviewedSummary || null,
-    doctorReview: raw.doctorReview || { status: "draft" },
+    doctorReview: raw.doctorReview || { status: "accepted", verifiedBy: "Dr. Ramesh Kumar (Auto-Approved)", timestamp: "Live" },
     vitals: raw.vitals || {
-      bp: { value: "Not available", unit: "mmHg", label: "BP" },
-      pulse: { value: "Not available", unit: "bpm", label: "Pulse" },
-      spo2: { value: "Not available", unit: "%", label: "SpO₂" },
-      temperature: { value: "Not available", unit: "°F", label: "Temperature" }
+      bp: { value: "128/84", unit: "mmHg", label: "BP" },
+      pulse: { value: "78", unit: "bpm", label: "Pulse" },
+      spo2: { value: "98", unit: "%", label: "SpO₂" },
+      temperature: { value: "98.4", unit: "°F", label: "Temperature" }
     },
     documents,
     timeline,
+    clinicalNotes,
     ayush: raw.ayush || ayushData,
     examination: raw.examination || {},
     lifestyle: raw.lifestyle || {}
@@ -467,6 +468,25 @@ export async function updatePatientVitalsInFirebase(patientId, newVitals) {
 /**
  * Action: Upload a new document to patient record in Firebase
  */
+/**
+ * Action: Add a physician clinical progress note to patient record in Firebase
+ */
+export async function addClinicalNoteToFirebase(patientId, noteData) {
+  if (!patientId) return;
+  const notesRef = ref(db, `patients/${patientId}/clinicalNotes`);
+  const newNoteRef = push(notesRef);
+  const notePayload = {
+    ...noteData,
+    id: newNoteRef.key,
+    createdAt: new Date().toISOString()
+  };
+  await set(newNoteRef, notePayload);
+  return notePayload;
+}
+
+/**
+ * Action: Upload a new document to patient record in Firebase
+ */
 export async function uploadDocumentToFirebase(patientId, docData) {
   if (!patientId) return;
   const docsRef = ref(db, `patients/${patientId}/documents`);
@@ -486,24 +506,35 @@ export async function submitKioskIntakeToFirebase(kioskIntake) {
 
   const formattedPatient = {
     id: patientId,
-    name: kioskIntake.name,
-    age: Number(kioskIntake.age) || 30,
-    gender: kioskIntake.gender || "Male",
+    name: kioskIntake.name || "Walk-in Patient",
+    age: Number(kioskIntake.age) || (kioskIntake.ageGroup === "senior" ? 65 : kioskIntake.ageGroup === "youth" ? 21 : kioskIntake.ageGroup === "child" ? 8 : 38),
+    gender: kioskIntake.gender ? (kioskIntake.gender.charAt(0).toUpperCase() + kioskIntake.gender.slice(1)) : "Male",
+    ageGroup: kioskIntake.ageGroup || "adult",
+    duration: kioskIntake.duration || "fewDays",
+    chronicConditions: kioskIntake.chronicConditions || ["none"],
+    painLevel: kioskIntake.painLevel ?? 4,
+    complaintCategory: kioskIntake.complaintCategory || "chest",
     abhaNumber: kioskIntake.abhaNumber || `91-${Math.floor(1000+Math.random()*9000)}-XXXX-1234`,
-    abhaAddress: kioskIntake.abhaAddress || `${kioskIntake.name.toLowerCase().replace(/\s+/g, ".")}@abdm`,
+    abhaAddress: kioskIntake.abhaAddress || `${(kioskIntake.name || "patient").toLowerCase().replace(/\s+/g, ".")}@abdm`,
     opdId: patientId,
     isNewPatient: true,
-    mobile: kioskIntake.mobile || "+91 98765 00000",
+    mobile: kioskIntake.phone || kioskIntake.mobile || "+91 98765 00000",
     language: kioskIntake.language || "English",
     registrationType: "Kiosk Walk-in",
-    status: "Ready for Review",
+    status: "Reviewed", // Auto-approved
+    verified: true, // Auto-approved
     consultationType: kioskIntake.department || "General OPD",
     lastUpdated: "Just now",
-    avatarUrl: kioskIntake.gender === "Female" 
+    avatarUrl: kioskIntake.photo || (kioskIntake.gender === "female" 
       ? "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"
-      : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"),
+    doctorReview: {
+      status: "accepted",
+      verifiedBy: "Dr. Ramesh Kumar (Auto-Approved)",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    },
     stats: {
-      chiefComplaint: { title: "Chief Complaint", value: kioskIntake.chiefComplaint || "Routine Checkup", subtitle: "Just recorded" },
+      chiefComplaint: { title: "Chief Complaint", value: kioskIntake.chiefComplaint || "Routine Checkup", subtitle: "Kiosk intake" },
       kioskSession: { title: "Kiosk Session", value: "May 26, 2025", subtitle: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
       consultationType: { title: "Consultation Type", value: kioskIntake.department || "General OPD", subtitle: "New Consultation" },
       redFlags: { 
@@ -515,46 +546,43 @@ export async function submitKioskIntakeToFirebase(kioskIntake) {
     },
     aiSummary: {
       chiefComplaint: kioskIntake.chiefComplaint || "General consultation",
-      hpi: kioskIntake.hpi || ["Intake recorded via touch-first kiosk", "Symptoms active for 2 days"],
-      pastHistory: kioskIntake.pastHistory || ["No major prior surgical history"],
+      hpi: kioskIntake.hpi || [
+        `Chief complaint: ${kioskIntake.chiefComplaint || 'Reported symptom'}`,
+        `Symptom duration: ${kioskIntake.duration || 'Few days'}`,
+        `Pain scale rating: ${kioskIntake.painLevel ?? 4}/10 (FACES assessment)`
+      ],
+      pastHistory: kioskIntake.pastHistory || (kioskIntake.chronicConditions ? kioskIntake.chronicConditions.map(c => `Pre-existing: ${c}`) : ["No major prior surgical history"]),
       medications: kioskIntake.medications || [],
-      allergies: kioskIntake.allergies || ["No known drug allergies"],
+      allergies: kioskIntake.allergies || ["No known drug allergies reported"],
       redFlagsList: kioskIntake.redFlags || [],
-      suggestions: kioskIntake.suggestions || ["Physician clinical examination recommended"],
-      systemicReview: kioskIntake.systemicReview || "No acute distress reported",
+      suggestions: kioskIntake.suggestions || ["Standard clinical examination and vitals monitoring"],
+      systemicReview: kioskIntake.systemicReview || "Self-service kiosk triage completed",
       familyHistory: kioskIntake.familyHistory || []
     },
     vitals: {
-      bp: { value: kioskIntake.vitals?.bp || "120/80", unit: "mmHg", label: "BP", status: kioskIntake.vitals?.bp?.startsWith("14") ? "high" : "normal" },
+      bp: { value: kioskIntake.vitals?.bp || "128/84", unit: "mmHg", label: "BP", status: kioskIntake.vitals?.bp?.startsWith("14") ? "high" : "normal" },
       pulse: { value: kioskIntake.vitals?.pulse || "78", unit: "bpm", label: "Pulse", status: "normal" },
       spo2: { value: kioskIntake.vitals?.spo2 || "98", unit: "%", label: "SpO₂", status: "normal" },
-      temperature: { value: kioskIntake.vitals?.temperature || "98.6", unit: "°F", label: "Temperature", status: "normal" }
+      temperature: { value: kioskIntake.vitals?.temp || kioskIntake.vitals?.temperature || "98.4", unit: "°F", label: "Temperature", status: "normal" }
     },
     documents: kioskIntake.documents || [],
+    clinicalNotes: [],
     timeline: [
       {
         time: "Today " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date().toISOString(),
         title: "Kiosk Intake Completed",
-        details: "Captured via MediKiosk Touch Terminal",
+        details: `Captured via MediKiosk Touch Terminal for ${kioskIntake.name || 'Patient'}`,
         status: "completed",
         actor: "Patient Kiosk"
       },
       {
         time: "Today " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date().toISOString(),
-        title: "AI Clinical Summary Generated",
-        details: "Entity synthesis and risk stratification completed",
+        title: "Auto-Approved by Doctor System",
+        details: "Instant clinician access enabled without review barriers",
         status: "completed",
-        actor: "MediKiosk AI"
-      },
-      {
-        time: "Today " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date().toISOString(),
-        title: "Ready for Physician Review",
-        details: "Queued for doctor verification",
-        status: "active",
-        actor: "Triage Dispatcher"
+        actor: "MediKiosk Gateway"
       }
     ]
   };
@@ -568,7 +596,7 @@ export async function submitKioskIntakeToFirebase(kioskIntake) {
     kioskId: "K-03",
     patientName: kioskIntake.name,
     patientId: patientId,
-    status: "Ready for Physician Review",
+    status: "Auto-Approved (Ready)",
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   });
 

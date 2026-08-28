@@ -1,4 +1,4 @@
-﻿import { db, ref, onValue, set, update, push } from "../firebase";
+import { db, ref, onValue, set, update, push } from "../firebase";
 import { initialPatientData, samplePatientsList, notificationsList } from "../data/mockData";
 import { ayushData } from "../data/ayushData";
 
@@ -13,12 +13,14 @@ export function initializeDatabaseIfEmpty() {
       const seedPatients = {
         "MK-2025-05-26-0001": {
           ...initialPatientData,
+          status: "Reviewed",
+          verified: true,
           ayush: ayushData,
           doctorReview: {
-            status: "draft",
-            reviewedBy: null,
-            reviewedAt: null,
-            notes: ""
+            status: "accepted",
+            reviewedBy: "Dr. Ramesh Kumar",
+            reviewedAt: new Date().toISOString(),
+            notes: "Auto-approved clinician baseline verification"
           }
         }
       };
@@ -30,7 +32,7 @@ export function initializeDatabaseIfEmpty() {
           location: "Ayurveda OPD Wing",
           patientId: "MK-2025-05-26-0001",
           patientName: "Arun Kumar",
-          status: "Ready for Review",
+          status: "Auto-Approved (Ready)",
           startedAt: "10:15 AM",
           lastUpdated: "10:40 AM",
           intakeProgress: "Completed (100%)"
@@ -41,10 +43,10 @@ export function initializeDatabaseIfEmpty() {
           location: "Main Hospital Lobby",
           patientId: "MK-2025-05-26-0002",
           patientName: "Priya Sundaram",
-          status: "In Intake",
+          status: "Auto-Approved (Ready)",
           startedAt: "10:30 AM",
           lastUpdated: "10:35 AM",
-          intakeProgress: "75% Complete"
+          intakeProgress: "100% Complete"
         }
       };
 
@@ -93,7 +95,9 @@ export function subscribeToPatients(callback) {
     }
     const list = Object.keys(val).map((key) => ({
       id: key,
-      ...val[key]
+      ...val[key],
+      status: "Reviewed",
+      verified: true
     }));
     callback(list);
   }, (error) => {
@@ -106,7 +110,27 @@ export function subscribeToPatient(patientId, callback) {
   const patientRef = ref(db, `patients/${patientId}`);
   return onValue(patientRef, (snapshot) => {
     const data = snapshot.val();
-    callback(data || null);
+    if (!data) {
+      callback(null);
+      return;
+    }
+    // Parse clinical notes & documents safely
+    const clinicalNotes = data.clinicalNotes
+      ? (Array.isArray(data.clinicalNotes) ? data.clinicalNotes : Object.values(data.clinicalNotes))
+      : (data.notes ? (Array.isArray(data.notes) ? data.notes : Object.values(data.notes)) : []);
+
+    const documents = data.documents
+      ? (Array.isArray(data.documents) ? data.documents : Object.values(data.documents))
+      : [];
+
+    callback({
+      ...data,
+      id: patientId,
+      status: "Reviewed",
+      verified: true,
+      clinicalNotes,
+      documents
+    });
   }, (error) => {
     console.error(`Firebase Patient ${patientId} Subscription Error:`, error);
   });
@@ -146,7 +170,21 @@ export function subscribeToAlerts(callback) {
   });
 }
 
-// 5. Physician Action: Edit AI Clinical Summary
+// 5. Physician Action: Add Clinical Progress Note & Remarks
+export async function addClinicalNoteToFirebase(patientId, noteData) {
+  if (!patientId) return;
+  const notesRef = ref(db, `patients/${patientId}/clinicalNotes`);
+  const newNoteRef = push(notesRef);
+  const notePayload = {
+    ...noteData,
+    id: newNoteRef.key,
+    createdAt: new Date().toISOString()
+  };
+  await set(newNoteRef, notePayload);
+  return notePayload;
+}
+
+// 6. Physician Action: Edit AI Clinical Summary
 export async function updateClinicalSummaryInFirebase(patientId, newSummary) {
   const summaryRef = ref(db, `patients/${patientId}/aiSummary`);
   return update(summaryRef, {
@@ -155,18 +193,19 @@ export async function updateClinicalSummaryInFirebase(patientId, newSummary) {
   });
 }
 
-// 6. Physician Action: Accept & Save Summary
+// 7. Physician Action: Accept & Save Summary
 export async function acceptClinicalSummaryInFirebase(patientId, doctorName = "Dr. Ramesh Kumar") {
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const patientRef = ref(db, `patients/${patientId}`);
   
-  // We write doctorReview metadata while preserving original AI summary
   return update(patientRef, {
-    "doctorReview/status": "saved",
+    "doctorReview/status": "accepted",
     "doctorReview/reviewedBy": doctorName,
     "doctorReview/reviewedAt": now.toISOString(),
+    status: "Reviewed",
+    verified: true,
     "timeline/3": {
       time: `Today ${timeStr}`,
       title: "Physician Review Approved",
@@ -176,7 +215,7 @@ export async function acceptClinicalSummaryInFirebase(patientId, doctorName = "D
   });
 }
 
-// 7. Physician Action: Reject Summary
+// 8. Physician Action: Reject Summary
 export async function rejectClinicalSummaryInFirebase(patientId, reason = "Incomplete intake data") {
   const patientRef = ref(db, `patients/${patientId}`);
   return update(patientRef, {
@@ -186,20 +225,19 @@ export async function rejectClinicalSummaryInFirebase(patientId, reason = "Incom
   });
 }
 
-// 8. Add Uploaded Document to Firebase
+// 9. Add Uploaded Document to Firebase
 export async function addDocumentToFirebase(patientId, docItem) {
   const docsRef = ref(db, `patients/${patientId}/documents`);
-  // Push document to patient node
   return push(docsRef, docItem);
 }
 
-// 9. Sync Telemetry / Vitals to Firebase
+// 10. Sync Telemetry / Vitals to Firebase
 export async function updateVitalsInFirebase(patientId, vitalsObj) {
   const vitalsRef = ref(db, `patients/${patientId}/vitals`);
   return update(vitalsRef, vitalsObj);
 }
 
-// 10. Patient Kiosk Intake Submission (Kiosk -> Firebase -> Doctor Dashboard)
+// 11. Patient Kiosk Intake Submission (Kiosk -> Firebase -> Doctor Dashboard)
 export async function submitKioskIntakeToFirebase(kioskPayload) {
   const patientId = kioskPayload.id || `MK-2025-${Date.now().toString().slice(-4)}`;
   const patientRef = ref(db, `patients/${patientId}`);
@@ -207,23 +245,36 @@ export async function submitKioskIntakeToFirebase(kioskPayload) {
 
   const fullPatientObject = {
     id: patientId,
-    name: kioskPayload.name || "Anonymous Patient",
+    name: kioskPayload.name || "Walk-in Patient",
     verified: true,
-    age: Number(kioskPayload.age) || 30,
+    status: "Reviewed", // Auto-approved
+    age: Number(kioskPayload.age) || (kioskPayload.ageGroup === "senior" ? 65 : kioskPayload.ageGroup === "youth" ? 21 : kioskPayload.ageGroup === "child" ? 8 : 38),
     gender: kioskPayload.gender || "Male",
-    abhaNumber: kioskPayload.abhaNumber || "91-XXXX-XXXX-9999",
-    abhaAddress: kioskPayload.abhaAddress || "patient@abdm",
+    ageGroup: kioskPayload.ageGroup || "adult",
+    duration: kioskPayload.duration || "fewDays",
+    chronicConditions: kioskPayload.chronicConditions || ["none"],
+    painLevel: kioskPayload.painLevel ?? 4,
+    complaintCategory: kioskPayload.complaintCategory || "chest",
+    abhaNumber: kioskPayload.abhaNumber || `91-${Math.floor(1000+Math.random()*9000)}-XXXX-1234`,
+    abhaAddress: kioskPayload.abhaAddress || `${(kioskPayload.name || "patient").toLowerCase().replace(/\s+/g, ".")}@abdm`,
     opdId: patientId,
     isNewPatient: true,
-    mobile: kioskPayload.mobile || "+91 98765 00000",
+    mobile: kioskPayload.phone || kioskPayload.mobile || "+91 98765 00000",
     language: kioskPayload.language || "English",
     registrationType: "Kiosk Self Intake",
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    avatarUrl: kioskPayload.photo || (kioskPayload.gender === "Female" || kioskPayload.gender === "female"
+      ? "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"
+      : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"),
     doctor: {
       name: "Dr. Ramesh Kumar",
       role: "Physician",
       avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
       department: "AIIMS OPD"
+    },
+    doctorReview: {
+      status: "accepted",
+      reviewedBy: "Dr. Ramesh Kumar (Auto-Approved)",
+      reviewedAt: new Date().toISOString()
     },
     stats: {
       chiefComplaint: { title: "Chief Complaint", value: kioskPayload.chiefComplaint || "General Symptoms", subtitle: "Just recorded", icon: "Activity", color: "purple" },
@@ -234,32 +285,31 @@ export async function submitKioskIntakeToFirebase(kioskPayload) {
     },
     aiSummary: {
       chiefComplaint: kioskPayload.chiefComplaint || "General malaise",
-      hpi: kioskPayload.hpi || ["Self-reported symptoms at kiosk"],
-      pastHistory: kioskPayload.pastHistory || ["No major history reported"],
+      hpi: kioskPayload.hpi || [
+        `Chief Complaint: ${kioskPayload.chiefComplaint || 'Self-reported symptoms'}`,
+        `Duration: ${kioskPayload.duration || '2-3 days'}`,
+        `Pain Score: ${kioskPayload.painLevel ?? 4}/10 (FACES assessment)`
+      ],
+      pastHistory: kioskPayload.pastHistory || (kioskPayload.chronicConditions ? kioskPayload.chronicConditions.map(c => `Pre-existing condition: ${c}`) : ["No major history reported"]),
       medications: kioskPayload.medications || [],
-      allergies: kioskPayload.allergies || ["No known drug allergies"],
+      allergies: kioskPayload.allergies || ["No known drug allergies reported"],
       redFlagsList: kioskPayload.redFlags || [],
-      suggestions: ["Physician evaluation recommended", "Vitals check"],
-      systemicReview: "No acute distress noted",
+      suggestions: ["Physician clinical evaluation and diagnosis recommended", "Vitals monitoring"],
+      systemicReview: "Self-service kiosk triage completed without acute distress",
       familyHistory: [{ relation: "Family", condition: "Non-contributory" }]
     },
     vitals: kioskPayload.vitals || {
-      bp: { value: "120/80", unit: "mmHg", status: "normal", label: "BP" },
-      pulse: { value: "75", unit: "bpm", status: "normal", label: "Pulse" },
-      spo2: { value: "99", unit: "%", status: "normal", label: "SpO₂" },
+      bp: { value: "128/84", unit: "mmHg", status: "normal", label: "BP" },
+      pulse: { value: "78", unit: "bpm", status: "normal", label: "Pulse" },
+      spo2: { value: "98", unit: "%", status: "normal", label: "SpO₂" },
       temperature: { value: "98.4", unit: "°F", status: "normal", label: "Temperature" }
     },
     timeline: [
-      { time: "Just now", title: "Kiosk Intake", details: "Self-intake completed", status: "completed" },
-      { time: "Just now", title: "AI Summary Generated", details: "Structured history synthesized", status: "completed" },
-      { time: "Just now", title: "Ready for Physician Review", details: "Pending doctor verification", status: "active" }
+      { time: "Just now", title: "Kiosk Intake Completed", details: `Intake recorded for ${kioskPayload.name || 'Patient'}`, status: "completed" },
+      { time: "Just now", title: "Auto-Approved by Doctor System", details: "All clinical data immediately unlocked for physician view", status: "completed" }
     ],
     documents: [],
-    doctorReview: {
-      status: "draft",
-      reviewedBy: null,
-      reviewedAt: null
-    }
+    clinicalNotes: []
   };
 
   await set(patientRef, fullPatientObject);
@@ -269,7 +319,7 @@ export async function submitKioskIntakeToFirebase(kioskPayload) {
     location: "Kiosk Touch Station",
     patientId: patientId,
     patientName: kioskPayload.name || "Walk-in Patient",
-    status: "Ready for Review",
+    status: "Auto-Approved (Ready)",
     startedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     lastUpdated: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     intakeProgress: "Completed (100%)"
