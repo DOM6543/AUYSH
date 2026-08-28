@@ -41,7 +41,7 @@ export default function AccessiblePatientKiosk() {
 
   // Kiosk 7-Step Progression:
   // 1: Language Selection
-  // 2: Camera Photo & Patient Demographics (Age + Gender)
+  // 2: Patient Name, Photo & Demographics (Age + Gender)
   // 3: Visual Body Map (Symptoms)
   // 4: Duration & Pre-existing Medical History
   // 5: Wong-Baker FACES Pain Scale
@@ -51,6 +51,7 @@ export default function AccessiblePatientKiosk() {
   const [audioEnabled, setAudioEnabled] = useState(true);
 
   // Patient Intake State
+  const [patientName, setPatientName] = useState("");
   const [patientPhoto, setPatientPhoto] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(false);
@@ -191,7 +192,7 @@ export default function AccessiblePatientKiosk() {
     if (step === 1) {
       speakPrompt(t.langPrompt);
     } else if (step === 2) {
-      speakPrompt(t.takePhotoPrompt);
+      speakPrompt(`${t.namePrompt}. ${t.takePhotoPrompt}`);
     } else if (step === 3) {
       speakPrompt(t.bodyPrompt);
     } else if (step === 4) {
@@ -229,8 +230,10 @@ export default function AccessiblePatientKiosk() {
     const bodyInfo = t.bodyParts[selectedBodyPart] || t.bodyParts.chest;
 
     const tokenNum = `A-${Math.floor(100 + Math.random() * 900)}`;
+    const finalPatientName = patientName.trim() || (patientPhone ? `Patient (${patientPhone.slice(-4)})` : "Walk-in OPD Patient");
+
     const intakePayload = {
-      name: patientPhone ? `Patient (${patientPhone.slice(-4)})` : "Walk-in OPD Patient",
+      name: finalPatientName,
       phone: patientPhone || "N/A",
       language: currentLanguage,
       photo: patientPhoto || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
@@ -262,6 +265,7 @@ export default function AccessiblePatientKiosk() {
 
     setGeneratedToken({
       number: tokenNum,
+      name: finalPatientName,
       room: "OPD Room 4",
       doctor: "Dr. Ramesh Kumar",
       department: "AIIMS Ayurveda & Integrative OPD",
@@ -334,6 +338,7 @@ export default function AccessiblePatientKiosk() {
             type="button"
             onClick={() => {
               setStep(1);
+              setPatientName("");
               setPatientPhoto(null);
               setPatientPhone("");
               setSelectedBodyPart("chest");
@@ -425,7 +430,7 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 2: CAMERA PHOTO CAPTURE & DEMOGRAPHICS (AGE + GENDER) */}
+        {/* STEP 2: PATIENT NAME, PHOTO CAPTURE & DEMOGRAPHICS (AGE + GENDER) */}
         {/* ========================================================================= */}
         {step === 2 && (
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200 max-w-4xl mx-auto w-full">
@@ -434,7 +439,7 @@ export default function AccessiblePatientKiosk() {
                 {t.step2Title}
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-white">
-                {t.takePhotoPrompt}
+                {t.idPrompt}
               </h2>
             </div>
 
@@ -492,13 +497,33 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Demographics: Age Group & Gender */}
-              <div className="space-y-4 bg-white text-slate-900 border-2 border-slate-200 rounded-3xl p-5 shadow-xl">
+              {/* Demographics: Patient Name, Age Group & Gender */}
+              <div className="space-y-3.5 bg-white text-slate-900 border-2 border-slate-200 rounded-3xl p-5 shadow-xl">
                 
-                {/* Age Brackets */}
+                {/* 1. Patient Full Name Input */}
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
-                    1. {t.agePrompt}
+                  <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-red-600" />
+                      <span>1. {t.namePrompt}</span>
+                    </span>
+                    <span className="text-[10px] text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                      Required
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={patientName}
+                    onChange={(e) => setPatientName(e.target.value)}
+                    placeholder={t.namePlaceholder}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-white focus:bg-white border-2 border-slate-300 focus:border-red-600 rounded-xl text-sm font-bold text-slate-900 placeholder:text-slate-400 outline-none transition shadow-inner"
+                  />
+                </div>
+
+                {/* 2. Age Brackets */}
+                <div>
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                    2. {t.agePrompt}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
@@ -511,23 +536,23 @@ export default function AccessiblePatientKiosk() {
                         key={item.key}
                         type="button"
                         onClick={() => setAgeGroup(item.key)}
-                        className={`p-2.5 rounded-2xl border-2 transition-all flex items-center gap-2 cursor-pointer text-left ${
+                        className={`p-2 rounded-2xl border-2 transition-all flex items-center gap-2 cursor-pointer text-left ${
                           ageGroup === item.key
                             ? "bg-red-600 text-white border-red-600 shadow-md font-bold"
                             : "bg-slate-50 hover:bg-red-50/50 text-slate-800 border-slate-200"
                         }`}
                       >
-                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-lg">{item.icon}</span>
                         <span className="text-xs font-bold leading-tight">{item.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Gender */}
+                {/* 3. Gender */}
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
-                    2. {t.genderPrompt}
+                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                    3. {t.genderPrompt}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -539,30 +564,30 @@ export default function AccessiblePatientKiosk() {
                         key={item.key}
                         type="button"
                         onClick={() => setGender(item.key)}
-                        className={`p-2.5 rounded-2xl border-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`p-2 rounded-2xl border-2 transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                           gender === item.key
                             ? "bg-red-600 text-white border-red-600 shadow-md font-bold"
                             : "bg-slate-50 hover:bg-red-50/50 text-slate-800 border-slate-200"
                         }`}
                       >
-                        <span className="text-lg">{item.icon}</span>
+                        <span className="text-base">{item.icon}</span>
                         <span className="text-xs font-bold">{item.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Optional Phone / ABHA */}
+                {/* 4. Optional Phone / ABHA */}
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
-                    3. {t.phoneInputPrompt}
+                    4. {t.phoneInputPrompt}
                   </label>
                   <input
                     type="tel"
                     value={patientPhone}
                     onChange={(e) => setPatientPhone(e.target.value)}
                     placeholder="9876543210 (Optional)"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-red-500 rounded-xl text-xs sm:text-sm font-semibold outline-none transition"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-red-500 rounded-xl text-xs sm:text-sm font-semibold outline-none transition"
                   />
                 </div>
 
@@ -904,7 +929,7 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 7: PRINT OPD TOKEN TICKET WITH CAPTURED PHOTO */}
+        {/* STEP 7: PRINT OPD TOKEN TICKET WITH CAPTURED PHOTO & PATIENT NAME */}
         {/* ========================================================================= */}
         {step === 7 && generatedToken && (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200 max-w-xl mx-auto w-full">
@@ -920,7 +945,7 @@ export default function AccessiblePatientKiosk() {
               </p>
             </div>
 
-            {/* Printable OPD Slip Paper Card with Photo */}
+            {/* Printable OPD Slip Paper Card with Photo & Patient Name */}
             <div className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-dashed border-red-300 space-y-4">
               {/* Slip Header with Red Cross */}
               <div className="text-center border-b border-slate-200 pb-3 space-y-1">
@@ -934,7 +959,7 @@ export default function AccessiblePatientKiosk() {
                 <div className="text-[11px] text-slate-400">Issued at: {generatedToken.time} · Station K-03</div>
               </div>
 
-              {/* Patient Photo & Token Banner */}
+              {/* Patient Photo, Name & Token Banner */}
               <div className="flex items-center gap-4 bg-red-50 border-2 border-red-200 rounded-2xl p-4">
                 {/* Captured Photo */}
                 <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-red-500 shrink-0 shadow-sm">
@@ -945,15 +970,18 @@ export default function AccessiblePatientKiosk() {
                   />
                 </div>
 
-                {/* Token Display */}
-                <div className="flex-1">
+                {/* Token & Patient Name Display */}
+                <div className="flex-1 min-w-0">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest block">
                     {t.tokenNumberLabel}
                   </span>
                   <div className="text-3xl sm:text-4xl font-black text-red-700 tracking-tight">
                     {generatedToken.number}
                   </div>
-                  <div className="text-xs font-bold text-slate-700 capitalize">
+                  <div className="text-sm font-black text-slate-900 truncate mt-0.5">
+                    {generatedToken.name}
+                  </div>
+                  <div className="text-xs font-bold text-slate-600 capitalize">
                     {generatedToken.gender} · {generatedToken.ageGroup}
                   </div>
                 </div>
@@ -1023,6 +1051,7 @@ export default function AccessiblePatientKiosk() {
                 type="button"
                 onClick={() => {
                   setStep(1);
+                  setPatientName("");
                   setPatientPhoto(null);
                   setPatientPhone("");
                   setSelectedBodyPart("chest");

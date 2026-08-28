@@ -12,7 +12,6 @@ export const SUPPORTED_LANGUAGES = [
 
 export const TRANSLATIONS = {
   en: {
-    // General
     selectLanguage: "Select Language",
     appName: "MediKiosk",
     networkTitle: "AIIMS Smart OPD Network",
@@ -22,7 +21,6 @@ export const TRANSLATIONS = {
     help: "Help & Support",
     online: "Online",
 
-    // Portal Login Page
     welcomeTitle: "Welcome to MediKiosk Health Portal",
     welcomeSubtitle: "Select your dedicated clinical interface below for doctors or walk-in patient self-intake.",
     doctorCardTitle: "Doctor & Clinician Portal",
@@ -45,7 +43,6 @@ export const TRANSLATIONS = {
     kioskStartBtn: "Start Patient Touch Kiosk",
     kioskSyncNotice: "Self-Service Station K-03 · Synchronizes live with Doctor OPD",
 
-    // Doctor Auth Modal
     authModalTitle: "Physician & Clinician Access",
     authModalSub: "Medical Council of India & ABDM Verified",
     tabSignIn: "Sign In",
@@ -68,7 +65,6 @@ export const TRANSLATIONS = {
     regSubmit: "Complete Registration & Open Workstation",
     registering: "Registering Clinician...",
 
-    // Patient Kiosk Steps (7 Steps Total)
     kioskTitle: "Patient Self-Service Touch Kiosk",
     kioskSubtitle: "AIIMS Smart Health Station",
     voiceOn: "Voice ON",
@@ -77,7 +73,7 @@ export const TRANSLATIONS = {
     exitKiosk: "Exit Kiosk",
 
     step1Title: "1. Language",
-    step2Title: "2. Photo & ID",
+    step2Title: "2. Name & Photo",
     step3Title: "3. Body Problem",
     step4Title: "4. Duration & History",
     step5Title: "5. Pain Level",
@@ -85,13 +81,15 @@ export const TRANSLATIONS = {
     step7Title: "7. OPD Slip",
 
     langPrompt: "Please choose your preferred language",
-    idPrompt: "Take your photo & choose check-in method",
+    idPrompt: "Enter your name, photo & choose check-in method",
+    namePrompt: "Patient Full Name",
+    namePlaceholder: "Type patient name (e.g., Ramesh Kumar)",
     takePhotoPrompt: "Position your face in the frame & smile",
     snapPhotoBtn: "Snap Photo",
     retakePhotoBtn: "Retake Photo",
     photoCapturedNotice: "Photo Captured Successfully!",
     scanCard: "Touch Fingerprint / Scan ABHA",
-    phoneInputPrompt: "Or Mobile Number (Optional)",
+    phoneInputPrompt: "Mobile Number (Optional)",
     quickGuest: "1-Touch Walk-in Check-in",
 
     agePrompt: "Age Group",
@@ -152,6 +150,7 @@ export const TRANSLATIONS = {
     tokenTitle: "Your OPD Token Slip is Ready!",
     tokenSubtitle: "Please proceed to the consultation room when your token is called.",
     tokenNumberLabel: "OPD Token Number",
+    patientNameLabel: "Patient Name",
     roomLabel: "Assigned Room",
     doctorLabel: "Consulting Doctor",
     vitalsSummaryLabel: "Recorded Vitals & Intake Data",
@@ -162,7 +161,6 @@ export const TRANSLATIONS = {
     backBtn: "Go Back",
     finishBtn: "Confirm & Generate Token",
 
-    // Doctor Sidebar & Navigation
     navDashboard: "Dashboard",
     navPatients: "Patients Directory",
     navAppointments: "Appointments",
@@ -237,7 +235,7 @@ export const TRANSLATIONS = {
     exitKiosk: "कियोस्क से बाहर निकलें",
 
     step1Title: "1. भाषा",
-    step2Title: "2. फोटो व पहचान",
+    step2Title: "2. नाम व फोटो",
     step3Title: "3. दर्द की जगह",
     step4Title: "4. अवधि व इतिहास",
     step5Title: "5. दर्द का स्तर",
@@ -245,13 +243,15 @@ export const TRANSLATIONS = {
     step7Title: "7. ओपीडी पर्ची",
 
     langPrompt: "कृपया अपनी पसंदीदा भाषा चुनें",
-    idPrompt: "फोटो खिंचवाएं और पंजीकरण का तरीका चुनें",
+    idPrompt: "मरीज का नाम दर्ज करें और फोटो खिंचवाएं",
+    namePrompt: "मरीज का पूरा नाम",
+    namePlaceholder: "मरीज का नाम लिखें (उदा. रमेश कुमार)",
     takePhotoPrompt: "कैमरे के सामने देखें और मुस्कुराएं",
     snapPhotoBtn: "फोटो खींचें",
     retakePhotoBtn: "दोबारा फोटो लें",
     photoCapturedNotice: "फोटो सफलतापूर्वक ली गई!",
     scanCard: "अंगूठा लगाएं या आभा कार्ड स्कैन करें",
-    phoneInputPrompt: "या मोबाइल नंबर दर्ज करें (वैकल्पिक)",
+    phoneInputPrompt: "मोबाइल नंबर (वैकल्पिक)",
     quickGuest: "सीधे 1-टच पर्ची बनाएं (बिना टाइप किए)",
 
     agePrompt: "आयु वर्ग",
@@ -312,6 +312,7 @@ export const TRANSLATIONS = {
     tokenTitle: "आपकी ओपीडी पर्ची तैयार है!",
     tokenSubtitle: "जब आपका नंबर पुकारा जाए तब कृपया डॉक्टर के कमरे में जाएं।",
     tokenNumberLabel: "ओपीडी टोकन नंबर",
+    patientNameLabel: "मरीज का नाम",
     roomLabel: "कमरा नंबर",
     doctorLabel: "परामर्श चिकित्सक",
     vitalsSummaryLabel: "जांचे गए संकेत एवं मरीज विवरण",
@@ -396,7 +397,7 @@ export const TRANSLATIONS = {
     exitKiosk: "வெளியேறு",
 
     step1Title: "1. மொழி",
-    step2Title: "2. புகைப்படம் & ஐடி",
+    step2Title: "2. பெயர் & புகைப்படம்",
     step3Title: "3. வலி உள்ள இடம்",
     step4Title: "4. காலம் & வரலாறு",
     step5Title: "5. வலி அளவு",
@@ -404,7 +405,9 @@ export const TRANSLATIONS = {
     step7Title: "7. டோக்கன் சீட்டு",
 
     langPrompt: "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
-    idPrompt: "புகைப்படம் எடுத்து பதிவு செய்யவும்",
+    idPrompt: "பெயர் உள்ளிட்டு புகைப்படம் எடுக்கவும்",
+    namePrompt: "நோயாளி முழுப் பெயர்",
+    namePlaceholder: "பெயரை உள்ளிடவும் (எ.கா. ரமேஷ் குமார்)",
     takePhotoPrompt: "கேமராவைப் பார்த்து சிரிக்கவும்",
     snapPhotoBtn: "புகைப்படம் எடுக்கவும்",
     retakePhotoBtn: "மீண்டும் எடுக்கவும்",
@@ -471,6 +474,7 @@ export const TRANSLATIONS = {
     tokenTitle: "உங்கள் OPD டோக்கன் சீட்டு தயாராக உள்ளது!",
     tokenSubtitle: "உங்கள் எண் அழைக்கப்படும் போது மருத்துவரிடம் செல்லவும்.",
     tokenNumberLabel: "டோக்கன் எண்",
+    patientNameLabel: "நோயாளி பெயர்",
     roomLabel: "அறை எண்",
     doctorLabel: "மருத்துவர்",
     vitalsSummaryLabel: "பதிவு செய்யப்பட்ட விவரங்கள்",
@@ -555,7 +559,7 @@ export const TRANSLATIONS = {
     exitKiosk: "నిష్క్రమించు",
 
     step1Title: "1. భాష",
-    step2Title: "2. ఫోటో & ఐడీ",
+    step2Title: "2. పేరు & ఫోటో",
     step3Title: "3. నొప్పి ఉన్న భాగం",
     step4Title: "4. వ్యవధి & చరిత్ర",
     step5Title: "5. నొప్పి స్థాయి",
@@ -563,13 +567,15 @@ export const TRANSLATIONS = {
     step7Title: "7. టోకెన్ స్లిప్",
 
     langPrompt: "మీ ప్రాధాన్య భాషను ఎంచుకోండి",
-    idPrompt: "ఫోటో తీయండి మరియు నమోదు పద్ధతిని ఎంచుకోండి",
+    idPrompt: "పేరు నమోదు చేసి ఫోటో తీయండి",
+    namePrompt: "రోగి పూర్తి పేరు",
+    namePlaceholder: "పేరు నమోదు చేయండి (ఉదా. రమేష్ కుమార్)",
     takePhotoPrompt: "కెమెరా వైపు చూసి నవ్వండి",
     snapPhotoBtn: "ఫోటో తీయండి",
     retakePhotoBtn: "మళ్ళీ తీయండి",
     photoCapturedNotice: "ఫోటో విజయవంతంగా తీయబడింది!",
     scanCard: "వేలిముద్ర వేయండి లేదా ABHA కార్డును స్కాన్ చేయండి",
-    phoneInputPrompt: "లేదా మొబైల్ నంబర్ నమోదు చేయండి",
+    phoneInputPrompt: "మొబైల్ నంబర్ నమోదు చేయండి",
     quickGuest: "డైరెక్ట్ టోకెన్ పొందండి",
 
     agePrompt: "వయస్సు వర్గం",
@@ -630,6 +636,7 @@ export const TRANSLATIONS = {
     tokenTitle: "మీ OPD టోకెన్ స్లిప్ సిద్ధంగా ఉంది!",
     tokenSubtitle: "మీ సంఖ్య పిలిచినప్పుడు డాక్టర్ గదికి వెళ్లండి.",
     tokenNumberLabel: "టోకెన్ నంబర్",
+    patientNameLabel: "రోగి పేరు",
     roomLabel: "గది సంఖ్య",
     doctorLabel: "కన్సల్టింగ్ డాక్టర్",
     vitalsSummaryLabel: "నమోదైన వివరాలు",
@@ -714,7 +721,7 @@ export const TRANSLATIONS = {
     exitKiosk: "ನಿರ್ಗಮಿಸಿ",
 
     step1Title: "1. ಭಾಷೆ",
-    step2Title: "2. ಫೋಟೋ & ಐಡಿ",
+    step2Title: "2. ಹೆಸರು & ಫೋಟೋ",
     step3Title: "3. ನೋವಿರುವ ಭಾಗ",
     step4Title: "4. ಅವಧಿ & ಇತಿಹಾಸ",
     step5Title: "5. ನೋವಿನ ಮಟ್ಟ",
@@ -722,13 +729,15 @@ export const TRANSLATIONS = {
     step7Title: "7. ಟೋಕನ್ ರಸೀದಿ",
 
     langPrompt: "ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-    idPrompt: "ಫೋಟೋ ತೆಗೆದುಕೊಂಡು ನೋಂದಾಯಿಸಿ",
+    idPrompt: "ಹೆಸರು ನಮೂದಿಸಿ ಮತ್ತು ಫೋಟೋ ತೆಗೆಯಿರಿ",
+    namePrompt: "ರೋಗಿಯ ಪೂರ್ಣ ಹೆಸರು",
+    namePlaceholder: "ಹೆಸರನ್ನು ನಮೂದಿಸಿ (ಉದಾ. ರಮೇಶ್ ಕುಮಾರ್)",
     takePhotoPrompt: "ಕ್ಯಾಮೆರಾ ಕಡೆಗೆ ನೋಡಿ ನಗುಮುಖ ಬೀರಿ",
     snapPhotoBtn: "ಫೋಟೋ ತೆಗೆಯಿರಿ",
     retakePhotoBtn: "ಮತ್ತೆ ತೆಗೆಯಿರಿ",
     photoCapturedNotice: "ಫೋಟೋ ಯಶಸ್ವಿಯಾಗಿ ತೆಗೆಯಲಾಗಿದೆ!",
     scanCard: "ಬೆರಳಚ್ಚು ಇರಿಸಿ ಅಥವಾ ABHA ಕಾರ್ಡ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
-    phoneInputPrompt: "ಅಥವಾ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
+    phoneInputPrompt: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
     quickGuest: "ನೇರ ಟೋಕನ್ ಪಡೆಯಿರಿ",
 
     agePrompt: "ವಯೋಮಾನ",
@@ -789,6 +798,7 @@ export const TRANSLATIONS = {
     tokenTitle: "ನಿಮ್ಮ OPD ಟೋಕನ್ ರಸೀದಿ ಸಿದ್ಧವಾಗಿದೆ!",
     tokenSubtitle: "ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು ಕರೆದಾಗ ವೈದ್ಯರ ಕೋಣೆಗೆ ಹೋಗಿ.",
     tokenNumberLabel: "ಟೋಕನ್ ಸಂಖ್ಯೆ",
+    patientNameLabel: "ರೋಗಿಯ ಹೆಸರು",
     roomLabel: "ಕೋಣೆ ಸಂಖ್ಯೆ",
     doctorLabel: "ವೈದ್ಯರು",
     vitalsSummaryLabel: "ಪರೀಕ್ಷಿಸಿದ ವಿವರಗಳು",
@@ -873,7 +883,7 @@ export const TRANSLATIONS = {
     exitKiosk: "প্রস্থান",
 
     step1Title: "১. ভাষা",
-    step2Title: "২. ছবি ও পরিচয়",
+    step2Title: "২. নাম ও ছবি",
     step3Title: "৩. ব্যথার স্থান",
     step4Title: "৪. সময়কাল ও ইতিহাস",
     step5Title: "৫. ব্যথার মাত্রা",
@@ -881,13 +891,15 @@ export const TRANSLATIONS = {
     step7Title: "৭. টোকেন স্লিপ",
 
     langPrompt: "আপনার পছন্দের ভাষা নির্বাচন করুন",
-    idPrompt: "ছবি তুলুন এবং নিবন্ধনের পদ্ধতি বেছে নিন",
+    idPrompt: "নাম লিখুন এবং ছবি তুলুন",
+    namePrompt: "রোগীর পুরো নাম",
+    namePlaceholder: "নাম লিখুন (যেমন রমেশ কুমার)",
     takePhotoPrompt: "ক্যামেরার দিকে তাকিয়ে হাসুন",
     snapPhotoBtn: "ছবি তুলুন",
     retakePhotoBtn: "আবার তুলুন",
     photoCapturedNotice: "ছবি সফলভাবে নেওয়া হয়েছে!",
     scanCard: "আঙুলের ছাপ দিন বা ABHA কার্ড স্ক্যান করুন",
-    phoneInputPrompt: "অথবা মোবাইল নম্বর লিখুন",
+    phoneInputPrompt: "মোবাইল নম্বর লিখুন",
     quickGuest: "সরাসরি টোকেন পান",
 
     agePrompt: "বয়স সীমা",
@@ -948,6 +960,7 @@ export const TRANSLATIONS = {
     tokenTitle: "আপনার OPD টোকেন স্লিপ প্রস্তুত!",
     tokenSubtitle: "আপনার নম্বর ডাকা হলে ডাক্তারের কক্ষে যান।",
     tokenNumberLabel: "টোকেন নম্বর",
+    patientNameLabel: "রোগীর নাম",
     roomLabel: "কক্ষ নম্বর",
     doctorLabel: "ডাক্তার",
     vitalsSummaryLabel: "রেকর্ড করা বিবরণ",
@@ -1032,7 +1045,7 @@ export const TRANSLATIONS = {
     exitKiosk: "बाहेर पडा",
 
     step1Title: "१. भाषा",
-    step2Title: "२. फोटो व ओळख",
+    step2Title: "२. नाव व फोटो",
     step3Title: "३. वेदनेची जागा",
     step4Title: "४. कालावधी व इतिहास",
     step5Title: "५. वेदनेची पातळी",
@@ -1040,13 +1053,15 @@ export const TRANSLATIONS = {
     step7Title: "७. ओपीडी पावती",
 
     langPrompt: "कृपया तुमची पसंतीची भाषा निवडा",
-    idPrompt: "फोटो काढा आणि नोंदणी पद्धत निवडा",
+    idPrompt: "नाव टाका आणि फोटो काढा",
+    namePrompt: "रुग्णाचे पूर्ण नाव",
+    namePlaceholder: "नाव टाका (उदा. रमेश कुमार)",
     takePhotoPrompt: "कॅमेऱ्याकडे पाहून स्मितहास्य करा",
     snapPhotoBtn: "फोटो काढा",
     retakePhotoBtn: "पुन्हा फोटो घ्या",
     photoCapturedNotice: "फोटो यशस्वीरित्या काढला!",
     scanCard: "अंगठा लावा किंवा ABHA कार्ड स्कॅन करा",
-    phoneInputPrompt: "किंवा मोबाईल नंबर टाका",
+    phoneInputPrompt: "मोबाईल नंबर टाका",
     quickGuest: "थेट टोकन मिळवा",
 
     agePrompt: "वय गट",
@@ -1107,6 +1122,7 @@ export const TRANSLATIONS = {
     tokenTitle: "तुमची OPD टोकन पावती तयार आहे!",
     tokenSubtitle: "तुमचा नंबर पुकारल्यावर कृपया डॉक्टरांच्या खोलीत जा.",
     tokenNumberLabel: "टोकन क्रमांक",
+    patientNameLabel: "रुग्णाचे नाव",
     roomLabel: "खोली क्रमांक",
     doctorLabel: "डॉक्टर",
     vitalsSummaryLabel: "नोंदवलेले तपशील",
@@ -1191,7 +1207,7 @@ export const TRANSLATIONS = {
     exitKiosk: "બહાર નીકળો",
 
     step1Title: "૧. ભાષા",
-    step2Title: "૨. ફોટો & આઈડી",
+    step2Title: "૨. નામ & ફોટો",
     step3Title: "૩. દુખાવાની જગ્યા",
     step4Title: "૪. સમયગાળો & ઇતિહાસ",
     step5Title: "૫. દર્દનું સ્તર",
@@ -1199,13 +1215,15 @@ export const TRANSLATIONS = {
     step7Title: "૭. OPD સ્લિપ",
 
     langPrompt: "કૃપા કરીને તમારી પસંદગીની ભાષા પસંદ કરો",
-    idPrompt: "ફોટો પાડો અને નોંધણી પદ્ધતિ પસંદ કરો",
+    idPrompt: "નામ દાખલ કરો અને ફોટો પાડો",
+    namePrompt: "દર્દીનું પૂરું નામ",
+    namePlaceholder: "નામ લખો (દા.ત. રમેશ કુમાર)",
     takePhotoPrompt: "કેમેરા સામે જુઓ અને હસો",
     snapPhotoBtn: "ફોટો પાડો",
     retakePhotoBtn: "ફરીથી ફોટો લો",
     photoCapturedNotice: "ફોટો સફળતાપૂર્વક લેવાયો!",
     scanCard: "અંગૂઠો લગાવો અથવા ABHA કાર્ડ સ્કેન કરો",
-    phoneInputPrompt: "અથવા મોબાઈલ નંબર દાખલ કરો",
+    phoneInputPrompt: "મોબાઈલ નંબર દાખલ કરો",
     quickGuest: "સીધું ટોકન મેળવો",
 
     agePrompt: "ઉંમર જૂથ",
@@ -1266,6 +1284,7 @@ export const TRANSLATIONS = {
     tokenTitle: "તમારી OPD ટોકન સ્લિપ તૈયાર છે!",
     tokenSubtitle: "જ્યારે તમારો નંબર બોલાવવામાં આવે ત્યારે ડોક્ટરના રૂમમાં જાઓ.",
     tokenNumberLabel: "ટોકન નંબર",
+    patientNameLabel: "દર્દીનું નામ",
     roomLabel: "રૂમ નંબર",
     doctorLabel: "ડોક્ટર",
     vitalsSummaryLabel: "નોંધાયેલી વિગતો",
