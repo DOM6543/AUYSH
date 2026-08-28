@@ -34,13 +34,13 @@ export default function AccessiblePatientKiosk() {
   // 1: Choose Language
   // 2: Face Photo Check-in
   // 3: Audio-Visual Consent
-  // 4: Medicine System (AYUSH / Allopathy / Both)
+  // 4: Which Doctor to See (Regular Doctor vs Ayurveda Doctor)
   // 5: Pain Location (Body Map)
   // 6: Duration of Problem
   // 7: Pain Severity (FACES)
   // 8: Existing Illness History
   // 9: Medicines & Documents
-  // 10: AYUSH Questions (1 by 1, when AYUSH chosen)
+  // 10: AYUSH Questions (1 by 1, activated ONLY when careSystem === "AYUSH")
   // 11: Machine Vitals Telemetry
   // 12: OPD Token Slip
   const [screen, setScreen] = useState(1);
@@ -52,7 +52,12 @@ export default function AccessiblePatientKiosk() {
   const [patientName, setPatientName] = useState("");
   const [patientPhoto, setPatientPhoto] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [medicalStream, setMedicalStream] = useState("ayush");
+
+  // Care-System Selection: 'ALLOPATHY' or 'AYUSH'
+  const [careSystem, setCareSystem] = useState("ALLOPATHY");
+  const [medicalStream, setMedicalStream] = useState("ALLOPATHY");
+
+  // Chief complaint & Clinical History
   const [selectedBodyPart, setSelectedBodyPart] = useState("chest");
   const [duration, setDuration] = useState("fewDays");
   const [painScore, setPainScore] = useState(4);
@@ -105,6 +110,19 @@ export default function AccessiblePatientKiosk() {
   // Conversational Intent Parser for spoken response
   const handleVoiceResponse = (transcript) => {
     const lower = transcript.toLowerCase();
+
+    // Doctor Selection
+    if (screen === 4) {
+      if (/ayurveda|ayush|herb|jadi|nattu|maruthuvam|prakriti/i.test(lower)) {
+        setCareSystem("AYUSH");
+        setMedicalStream("AYUSH");
+        setScreen(5);
+      } else if (/regular|general|allopathy|doctor|english|hospital/i.test(lower)) {
+        setCareSystem("ALLOPATHY");
+        setMedicalStream("ALLOPATHY");
+        setScreen(5);
+      }
+    }
     
     // Body parts
     if (screen === 5) {
@@ -193,7 +211,7 @@ export default function AccessiblePatientKiosk() {
     if (screen === 1) speakText(str.chooseLanguage);
     else if (screen === 2) speakText(str.photoPrompt);
     else if (screen === 3) speakText(str.consentAudio);
-    else if (screen === 4) speakText(str.streamPrompt);
+    else if (screen === 4) speakText(str.doctorChoiceAudio);
     else if (screen === 5) speakText(str.bodyPrompt);
     else if (screen === 6) speakText(str.durationPrompt);
     else if (screen === 7) speakText(str.painPrompt);
@@ -240,7 +258,7 @@ export default function AccessiblePatientKiosk() {
       setUploadedDocuments([newDoc]);
       speakText(str.docSuccess);
       setTimeout(() => {
-        if (medicalStream === "ayush") {
+        if (careSystem === "AYUSH") {
           setAyushSubStep(0);
           setScreen(10);
         } else {
@@ -293,7 +311,8 @@ export default function AccessiblePatientKiosk() {
       name: finalPatientName,
       phone: "Walk-in",
       language: currentLanguage,
-      medicalStream,
+      careSystem: careSystem,
+      medicalStream: careSystem,
       photo: patientPhoto || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
       ageGroup: "adult",
       gender: "unspecified",
@@ -334,8 +353,8 @@ export default function AccessiblePatientKiosk() {
       },
       painLevel: painScore,
       tokenNumber: tokenNum,
-      assignedDoctor: medicalStream === "ayush" ? "Dr. Ramesh Kumar (AYUSH Room 4)" : "Dr. Sharma (General Medicine Room 2)",
-      department: medicalStream === "ayush" ? "AIIMS AYUSH & Ayurvedic OPD" : "AIIMS General Medicine OPD",
+      assignedDoctor: careSystem === "AYUSH" ? "Dr. Ramesh Kumar (AYUSH Room 4)" : "Dr. Sharma (General Medicine Room 2)",
+      department: careSystem === "AYUSH" ? "AIIMS AYUSH & Ayurvedic OPD" : "AIIMS General Medicine OPD",
       vitals: { bp: "128/84 mmHg", pulse: "78 bpm", spo2: "98%", temp: "98.4 °F" },
       documents: uploadedDocuments,
       intakeTimestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -352,9 +371,10 @@ export default function AccessiblePatientKiosk() {
     setGeneratedToken({
       number: tokenNum,
       name: finalPatientName,
-      medicalStream,
-      room: medicalStream === "ayush" ? "AYUSH Room 4" : "OPD Room 2",
-      doctor: medicalStream === "ayush" ? "Dr. Ramesh Kumar" : "Dr. Sharma",
+      careSystem,
+      medicalStream: careSystem,
+      room: careSystem === "AYUSH" ? "AYUSH Room 4" : "OPD Room 2",
+      doctor: careSystem === "AYUSH" ? "Dr. Ramesh Kumar" : "Dr. Sharma",
       department: intakePayload.department,
       complaint: complaintLabel,
       photo: intakePayload.photo,
@@ -598,71 +618,82 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* SCREEN 4: SYSTEM OF MEDICINE */}
+        {/* SCREEN 4: WHICH DOCTOR DO YOU WANT TO SEE? (EXACTLY 2 CHOICES) */}
         {/* ========================================================================= */}
         {screen === 4 && (
           <div className="space-y-6 max-w-xl mx-auto w-full text-center animate-in fade-in duration-200">
-            <div className="space-y-1">
-              <h2 className="text-2xl sm:text-3xl font-black text-white">{str.streamTitle}</h2>
-              <p className="text-sm text-slate-400 font-medium">{str.streamPrompt}</p>
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-white">{str.doctorChoiceTitle}</h2>
+              <p className="text-sm sm:text-base text-slate-300 font-semibold">{str.doctorChoicePrompt}</p>
+
+              <button
+                type="button"
+                onClick={() => speakText(str.doctorChoiceAudio)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 text-xs font-black shadow-md cursor-pointer active:scale-95 mt-1"
+              >
+                <Volume2 className="w-4 h-4 text-amber-400" />
+                <span>{str.hearAgain}</span>
+              </button>
             </div>
 
-            <div className="space-y-3.5">
+            {/* Exactly TWO Enormous Visual Choice Cards */}
+            <div className="space-y-4 pt-1">
+              
+              {/* Choice 1: Regular / General Doctor */}
               <button
                 type="button"
                 onClick={() => {
-                  setMedicalStream("ayush");
-                  setScreen(5);
+                  setCareSystem("ALLOPATHY");
+                  setMedicalStream("ALLOPATHY");
+                  speakText(str.regularDoctor);
+                  setTimeout(() => setScreen(5), 250);
                 }}
-                className={`w-full p-6 rounded-3xl border-4 transition-all flex items-center gap-4 text-left cursor-pointer active:scale-95 shadow-xl ${
-                  medicalStream === "ayush"
-                    ? "bg-gradient-to-r from-amber-600 to-orange-700 text-white border-white scale-102 ring-4 ring-amber-400/40"
-                    : "bg-white text-slate-900 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <span className="text-5xl shrink-0">🌿</span>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-black">{str.streamAyush}</h3>
-                  <p className="text-xs sm:text-sm opacity-90 mt-0.5">{str.streamAyushSub}</p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMedicalStream("allopathic");
-                  setScreen(5);
-                }}
-                className={`w-full p-6 rounded-3xl border-4 transition-all flex items-center gap-4 text-left cursor-pointer active:scale-95 shadow-xl ${
-                  medicalStream === "allopathic"
+                className={`w-full p-6 sm:p-7 rounded-3xl border-4 transition-all flex items-center gap-5 text-left cursor-pointer active:scale-95 shadow-2xl ${
+                  careSystem === "ALLOPATHY"
                     ? "bg-gradient-to-r from-red-600 to-rose-700 text-white border-white scale-102 ring-4 ring-red-400/40"
                     : "bg-white text-slate-900 border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <span className="text-5xl shrink-0">💊</span>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-black">{str.streamAllopath}</h3>
-                  <p className="text-xs sm:text-sm opacity-90 mt-0.5">{str.streamAllopathSub}</p>
+                <span className="text-6xl shrink-0">🩺</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">{str.regularDoctor}</h3>
+                  <p className="text-xs sm:text-sm opacity-90 mt-1 leading-relaxed">{str.regularDoctorSub}</p>
                 </div>
+                {careSystem === "ALLOPATHY" && <Check className="w-8 h-8 text-white stroke-[3] shrink-0" />}
               </button>
 
+              {/* Choice 2: Ayurveda Doctor */}
               <button
                 type="button"
                 onClick={() => {
-                  setMedicalStream("integrative");
-                  setScreen(5);
+                  setCareSystem("AYUSH");
+                  setMedicalStream("AYUSH");
+                  speakText(str.ayurvedaDoctor);
+                  setTimeout(() => setScreen(5), 250);
                 }}
-                className={`w-full p-6 rounded-3xl border-4 transition-all flex items-center gap-4 text-left cursor-pointer active:scale-95 shadow-xl ${
-                  medicalStream === "integrative"
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-white scale-102 ring-4 ring-emerald-400/40"
+                className={`w-full p-6 sm:p-7 rounded-3xl border-4 transition-all flex items-center gap-5 text-left cursor-pointer active:scale-95 shadow-2xl ${
+                  careSystem === "AYUSH"
+                    ? "bg-gradient-to-r from-amber-600 to-orange-700 text-white border-white scale-102 ring-4 ring-amber-400/40"
                     : "bg-white text-slate-900 border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <span className="text-5xl shrink-0">🔄</span>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-black">{str.streamBoth}</h3>
-                  <p className="text-xs sm:text-sm opacity-90 mt-0.5">{str.streamBothSub}</p>
+                <span className="text-6xl shrink-0">🌿</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-black leading-tight">{str.ayurvedaDoctor}</h3>
+                  <p className="text-xs sm:text-sm opacity-90 mt-1 leading-relaxed">{str.ayurvedaDoctorSub}</p>
                 </div>
+                {careSystem === "AYUSH" && <Check className="w-8 h-8 text-white stroke-[3] shrink-0" />}
+              </button>
+
+            </div>
+
+            <div className="flex justify-start pt-2">
+              <button
+                type="button"
+                onClick={() => setScreen(3)}
+                className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>{str.backBtn}</span>
               </button>
             </div>
           </div>
@@ -710,6 +741,16 @@ export default function AccessiblePatientKiosk() {
                   </button>
                 );
               })}
+            </div>
+
+            <div className="flex justify-start pt-2">
+              <button
+                type="button"
+                onClick={() => setScreen(4)}
+                className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>{str.backBtn}</span>
+              </button>
             </div>
           </div>
         )}
@@ -932,7 +973,7 @@ export default function AccessiblePatientKiosk() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (medicalStream === "ayush") {
+                    if (careSystem === "AYUSH") {
                       setAyushSubStep(0);
                       setScreen(10);
                     } else {
@@ -945,13 +986,23 @@ export default function AccessiblePatientKiosk() {
                 </button>
               </div>
             )}
+
+            <div className="flex justify-start pt-2">
+              <button
+                type="button"
+                onClick={() => setScreen(8)}
+                className="px-5 py-3 rounded-2xl bg-slate-800 text-slate-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>{str.backBtn}</span>
+              </button>
+            </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* SCREEN 10: SIMPLIFIED AYUSH QUESTIONS (1 QUESTION AT A TIME) */}
+        {/* SCREEN 10: SIMPLIFIED AYUSH QUESTIONS (ACTIVATED ONLY FOR CARE-SYSTEM AYUSH) */}
         {/* ========================================================================= */}
-        {screen === 10 && (
+        {screen === 10 && careSystem === "AYUSH" && (
           <div className="space-y-6 max-w-xl mx-auto w-full text-center animate-in fade-in duration-200">
             
             {/* AYUSH Intro */}
