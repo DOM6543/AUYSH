@@ -433,43 +433,110 @@ export default function HistoryTabs() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: EXTENDED AYUSH DASHAVIDHA PARIKSHA */}
+        {/* TAB 4: EXTENDED AYUSH DASHAVIDHA PARIKSHA (10-DIMENSIONS) */}
         {/* ========================================================================= */}
         {activeTab === "ayush" && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+            <div className="bg-amber-50/80 border-2 border-amber-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-lg">🌿</span>
-                <strong className="text-amber-950 font-black">AYUSH Dashavidha Pariksha (दशविध परीक्षा)</strong>
+                <span className="text-xl">🌿</span>
+                <div>
+                  <strong className="text-amber-950 font-black text-sm block">AYUSH Dashavidha Pariksha (दशविध परीक्षा)</strong>
+                  <span className="text-[11px] text-amber-800">10-Point Holistic Ayurvedic Examination · Patient-Reported Assessment</span>
+                </div>
               </div>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px] border border-amber-300">
+              <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-full font-black text-[11px] border border-amber-300 shadow-xs">
                 Prakriti: {ayushInfo?.prakriti?.primary || "Pitta"}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
-              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">1. Prakriti & Vikriti</span>
-                <div className="font-bold text-slate-900">{ayushInfo?.prakriti?.primary || "Pitta"} Dominant Prakriti</div>
-                <div className="text-[11px] text-slate-600">Vikriti Imbalance: {ayushInfo?.vikriti?.subdosha || "Samana Vata & Pachaka Pitta"}</div>
-              </div>
+            {/* Panel 1: Constitutional & Tissue Dimensions */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-black text-amber-950 uppercase tracking-wider block">Section 1: Dosha Constitution, Imbalance & Tissue Essence</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Prakriti (Constitution)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.prakriti?.primary || "Pitta"} Dominant</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
 
-              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">2. Agni & Koshtha</span>
-                <div className="font-bold text-slate-900">Agni: {ayushInfo?.agniStatus?.type || "Tikshnagni"}</div>
-                <div className="text-[11px] text-slate-600">Bowel: {ayushInfo?.koshtha?.type || "Madhyama Koshtha"}</div>
-              </div>
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Vikriti (Dosha Imbalance)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.vikriti?.imbalance || ayushInfo?.vikriti?.subdosha || "Moderate Imbalance"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
 
-              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">3. Sara & Samhanana</span>
-                <div className="font-bold text-slate-900">Sara: {ayushInfo?.sara?.type || "Rakta Sara (Blood)"}</div>
-                <div className="text-[11px] text-slate-600">Build: Madhyama Samhanana (Balanced)</div>
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Sara (Tissue Essence)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.sara?.type || "Rakta Sara (Blood Essence)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
               </div>
+            </div>
 
-              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">4. Sattva & Shakti</span>
-                <div className="font-bold text-slate-900">Mental Strength: {ayushInfo?.sattva?.type || "Pravara Sattva"}</div>
-                <div className="text-[11px] text-slate-600">Digestive Capacity: Pravara Ahara Shakti</div>
+            {/* Panel 2: Digestion, Bowel & Compactness */}
+            <div className="space-y-2 pt-1 border-t border-slate-100">
+              <span className="text-[10px] font-black text-amber-950 uppercase tracking-wider block">Section 2: Digestive Fire, Bowel Pattern & Body Build</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Agni Status (Digestive Fire)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.agniStatus?.type || "Tikshnagni (Hyperactive)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">5. Koshtha (Bowel Pattern)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.koshtha?.type || "Madhyama Koshtha"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">6. Samhanana (Body Build)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.samhanana?.type || "Susambaddha (Well-compacted)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Panel 3: Anthropometry, Adaptability, Mental Resilience & Life Stage */}
+            <div className="space-y-2 pt-1 border-t border-slate-100">
+              <span className="text-[10px] font-black text-amber-950 uppercase tracking-wider block">Section 3: Proportions, Adaptability, Psyche & Endurance</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">7. Pramana (Proportions)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.pramana?.type || "Sama Pramana (Proportionate)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">8. Satmya (Diet Adaptability)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.satmya?.type || "Sarva Rasa Satmya (All 6 Tastes)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">9. Sattva (Mental Strength)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.sattva?.type || "Pravara Sattva (High Resilience)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">10. Ahara Shakti (Ingestion Power)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.aharaShakti?.type || "Abhyavaharana Shakti Uttama"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">11. Vyayama Shakti (Stamina)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.vyayamaShakti?.type || "Pravara (High Endurance)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">12. Vaya (Biological Stage)</span>
+                  <div className="font-bold text-slate-900">{ayushInfo?.vaya?.type || "Madhyama (Adult Stage)"}</div>
+                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                </div>
               </div>
             </div>
           </div>

@@ -16,7 +16,8 @@ import {
   FileText,
   Paperclip,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  GitMerge
 } from "lucide-react";
 import { usePatient } from "../../context/PatientContext";
 
@@ -118,6 +119,12 @@ export default function PatientHeader() {
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
                 Verified & Auto-Approved
+              </span>
+
+              {/* ABDM Interoperability Status Badge */}
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300 shadow-xs" title="HL7 FHIR R4 Bundle Export Active · Gateway Live Bridge: Sandbox Pending">
+                <GitMerge className="w-3.5 h-3.5 text-purple-700" />
+                ABDM: Sandbox Pending
               </span>
 
               {patient.chiefComplaint && (

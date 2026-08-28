@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "patients": {
+      ".read": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician')",
+      "$patientId": {
+        ".read": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician' || auth.uid === $patientId)",
+        ".write": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician' || auth.token.role === 'kiosk')",
+        "clinicalNotes": {
+          ".write": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician')"
+        },
+        "doctorReview": {
+          ".write": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician')"
+        }
+      }
+    },
+    "sessions": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "alerts": {
+      ".read": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician')",
+      ".write": "auth != null"
+    },
+    "appointments": {
+      ".read": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician')",
+      ".write": "auth != null && (auth.token.role === 'doctor' || auth.token.role === 'clinician')"
+    }
+  }
+}

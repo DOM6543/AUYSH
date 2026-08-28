@@ -1,4 +1,4 @@
-﻿import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getDatabase,
   ref,
@@ -11,9 +11,16 @@ import {
   off,
   remove
 } from "firebase/database";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signInAnonymously,
+  signOut,
+  onAuthStateChanged
+} from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDummyKeyForRTDBDirectEndpoint", // Standard Web SDK client config for Realtime Database
+  apiKey: "AIzaSyDummyKeyForRTDBDirectEndpoint",
   authDomain: "medikiosk-7cf65.firebaseapp.com",
   databaseURL: "https://medikiosk-7cf65-default-rtdb.firebaseio.com",
   projectId: "medikiosk-7cf65",
@@ -24,10 +31,12 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getDatabase(app);
+const auth = getAuth(app);
 
 export {
   app,
   db,
+  auth,
   ref,
   onValue,
   set,
@@ -36,5 +45,9 @@ export {
   get,
   child,
   off,
-  remove
+  remove,
+  signInWithEmailAndPassword,
+  signInAnonymously,
+  signOut,
+  onAuthStateChanged
 };

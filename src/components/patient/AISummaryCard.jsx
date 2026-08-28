@@ -17,14 +17,14 @@ export default function AISummaryCard() {
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-black">
-              <Sparkles className="w-4 h-4" />
+              <Cpu className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-900">
-                AI Clinical Summary & History (Draft)
+                Structured Clinical Synthesis (Deterministic EHR Draft)
               </h3>
               <span className="text-[10px] text-slate-400 font-semibold">
-                Generated from Kiosk Intake & Digitized Prior Rx · Non-autonomous
+                Synthesized from Kiosk Intake & Tesseract OCR · Provenance: DETERMINISTIC_CLINICAL_SYNTHESIS
               </span>
             </div>
           </div>

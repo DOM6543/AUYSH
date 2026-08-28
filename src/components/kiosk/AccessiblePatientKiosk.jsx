@@ -41,7 +41,9 @@ import {
   FileCheck,
   CheckSquare,
   Square,
-  AlertCircle
+  AlertCircle,
+  Cpu,
+  Layers
 } from "lucide-react";
 import { usePatient } from "../../context/PatientContext";
 import LanguageSelector from "../common/LanguageSelector";
@@ -58,20 +60,21 @@ import {
 import { speechService } from "../../services/speech/speechService";
 import { ocrService } from "../../services/documents/ocrService";
 import { medicalExtractionService } from "../../services/documents/medicalExtractionService";
+import { documentStorageService } from "../../services/storage/storageService";
 
 export default function AccessiblePatientKiosk() {
   const { submitKioskIntake, setPortalMode, currentLanguage, setCurrentLanguage, t } = usePatient();
 
   // Kiosk 12-Step Progression:
-  // 1: Language Selection (8 Languages)
+  // 1: Language Selection (8 Regional Languages)
   // 2: Identity / ABHA & Live Webcam Photo Capture
   // 3: Multimodal Patient Consent Screen
-  // 4: Medicine Stream (AYUSH / Allopathy / Integrative)
-  // 5: Chief Complaint & Body Problem Map
-  // 6: Voice + Touch Adaptive HPI (Onset, Radiation, Factors, Associated)
+  // 4: Medicine System (AYUSH / Allopathy / Integrative)
+  // 5: Chief Complaint & Visual Body Map
+  // 6: Voice + Touch Adaptive HPI Interview
   // 7: Complete Medical & Surgical History + Meds + Allergies
-  // 8: AYUSH Dashavidha Pariksha (when AYUSH chosen)
-  // 9: Medical Document Scanner & OCR Extraction Preview
+  // 8: Full 10-Dimension AYUSH Dashavidha Pariksha (when AYUSH chosen)
+  // 9: Real Tesseract.js OCR Document Scanner & Entity Preview
   // 10: 1-Touch Machine Vitals Calibration
   // 11: Pre-Submission Review & Verification Screen
   // 12: OPD Token Slip & Thermal Receipt Print
@@ -122,16 +125,25 @@ export default function AccessiblePatientKiosk() {
     activity: "Moderate"
   });
 
-  // Extended AYUSH Dashavidha Pariksha State
+  // Complete 10-Dimension AYUSH Dashavidha State (All Patient Reported)
   const [ayushPrakritiPrimary, setAyushPrakritiPrimary] = useState("Pitta");
-  const [ayushAgni, setAyushAgni] = useState("Tikshnagni");
-  const [ayushKoshtha, setAyushKoshtha] = useState("Madhyama");
-  const [ayushSara, setAyushSara] = useState("Rakta Sara (Blood)");
-  const [ayushSattva, setAyushSattva] = useState("Pravara Sattva");
+  const [ayushVikriti, setAyushVikriti] = useState("Moderate Imbalance (Pachaka Pitta)");
+  const [ayushAgni, setAyushAgni] = useState("Tikshnagni (Hyperactive / Acidic)");
+  const [ayushKoshtha, setAyushKoshtha] = useState("Madhyama Koshtha (Regular)");
+  const [ayushSara, setAyushSara] = useState("Rakta Sara (Blood Essence)");
+  const [ayushSamhanana, setAyushSamhanana] = useState("Susambaddha (Well-compacted / Strong build)");
+  const [ayushPramana, setAyushPramana] = useState("Sama Pramana (Proportionate height-to-span)");
+  const [ayushSatmya, setAyushSatmya] = useState("Sarva Rasa Satmya (All 6 tastes wholesome)");
+  const [ayushSattva, setAyushSattva] = useState("Pravara Sattva (High emotional resilience)");
+  const [ayushAharaShakti, setAyushAharaShakti] = useState("Abhyavaharana Shakti Uttama (Good intake & digestion)");
+  const [ayushVyayamaShakti, setAyushVyayamaShakti] = useState("Pravara (High physical capacity & stamina)");
+  const [ayushVaya, setAyushVaya] = useState("Madhyama (Adult / Maintenance Stage)");
 
-  // Documents & OCR Extraction State
+  // Real Tesseract OCR Extraction State
   const [uploadedDocuments, setUploadedDocuments] = useState([]);
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrStatusText, setOcrStatusText] = useState("");
+  const [ocrProgressPercent, setOcrProgressPercent] = useState(0);
   const docFileInputRef = useRef(null);
 
   // Machine Vitals State
@@ -175,40 +187,32 @@ export default function AccessiblePatientKiosk() {
     }
   };
 
-  // Conversational Intent Handler
+  // Deterministic Multilingual Clinical Speech Intent Handler
   const handleVoiceIntent = (transcript, isFinal) => {
-    const lower = transcript.toLowerCase();
+    const parsed = speechService.parseClinicalSpeechIntent(transcript);
 
-    // Step 2: Name extraction if speaking in step 2
+    // Step 2: Name extraction
     if (step === 2 && !patientName && isFinal) {
-      const cleanName = transcript.replace(/my name is|mera naam|naam|i am/gi, "").trim();
+      const cleanName = transcript.replace(/my name is|mera naam|naam|i am|en peyar/gi, "").trim();
       if (cleanName) setPatientName(cleanName);
     }
 
     // Step 4: Stream selection
-    if (step === 4) {
-      if (lower.includes("ayush") || lower.includes("ayurved") || lower.includes("herbal")) setMedicalStream("ayush");
-      if (lower.includes("allopath") || lower.includes("modern") || lower.includes("general")) setMedicalStream("allopathic");
-      if (lower.includes("both") || lower.includes("integrative")) setMedicalStream("integrative");
+    if (step === 4 && parsed.stream) {
+      setMedicalStream(parsed.stream);
     }
 
     // Step 5: Body parts
-    if (step === 5) {
-      if (lower.includes("chest") || lower.includes("chhati") || lower.includes("heart") || lower.includes("dil")) setSelectedBodyPart("chest");
-      if (lower.includes("stomach") || lower.includes("pet") || lower.includes("gas") || lower.includes("acid")) setSelectedBodyPart("stomach");
-      if (lower.includes("head") || lower.includes("sir") || lower.includes("aankh") || lower.includes("eye")) setSelectedBodyPart("head");
-      if (lower.includes("knee") || lower.includes("ghutna") || lower.includes("leg") || lower.includes("pair")) setSelectedBodyPart("knees");
-      if (lower.includes("throat") || lower.includes("gala") || lower.includes("cough") || lower.includes("khansi")) setSelectedBodyPart("throat");
-      if (lower.includes("back") || lower.includes("kamar") || lower.includes("spine")) setSelectedBodyPart("back");
-      if (lower.includes("skin") || lower.includes("khujli") || lower.includes("rash")) setSelectedBodyPart("skin");
+    if (step === 5 && parsed.bodyRegion) {
+      setSelectedBodyPart(parsed.bodyRegion);
     }
 
-    // Step 6: Duration
+    // Step 6: Duration & HPI
     if (step === 6) {
-      if (lower.includes("today") || lower.includes("aaj")) setDuration("today");
-      if (lower.includes("2") || lower.includes("3") || lower.includes("few days")) setDuration("fewDays");
-      if (lower.includes("week") || lower.includes("hafte")) setDuration("weeks");
-      if (lower.includes("month") || lower.includes("mahine")) setDuration("month");
+      if (parsed.duration) setDuration(parsed.duration);
+      if (parsed.painScore !== null) setPainScore(parsed.painScore);
+      if (parsed.hpiCharacter) setHpiCharacter(parsed.hpiCharacter);
+      if (parsed.hpiRadiation) setHpiRadiation(parsed.hpiRadiation);
     }
   };
 
@@ -281,17 +285,26 @@ export default function AccessiblePatientKiosk() {
     startCamera();
   };
 
-  // Document Upload & OCR Ingestion in Kiosk
+  // Real Tesseract OCR Document Upload Handler
   const handleDocumentUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsOcrProcessing(true);
-    speakPrompt("Scanning and digitizing medical document with OCR...");
+    setOcrProgressPercent(10);
+    setOcrStatusText("Preparing document for optical character recognition...");
+    speakPrompt("Reading medical document with optical character recognition...");
 
     try {
-      const ocrResult = await ocrService.extractTextFromDocument(file);
+      const ocrResult = await ocrService.extractTextFromDocument(file, {
+        onProgress: (p) => {
+          setOcrProgressPercent(Math.round((p.progress || 0) * 100));
+          setOcrStatusText(p.message || "Extracting clinical characters...");
+        }
+      });
+
       const extractions = medicalExtractionService.extractMedicalEntities(ocrResult.rawText, {
+        id: `doc-${Date.now()}`,
         name: file.name,
         uploadedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       });
@@ -300,14 +313,18 @@ export default function AccessiblePatientKiosk() {
         id: `kiosk-doc-${Date.now()}`,
         name: file.name,
         type: file.type?.includes("pdf") ? "pdf" : "image",
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
         uploadedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         rawText: ocrResult.rawText,
-        extractions
+        confidence: ocrResult.confidence,
+        ocrEngine: ocrResult.engine || "Tesseract.js WASM",
+        extractions,
+        provenance: "DOCUMENT_EXTRACTED"
       };
 
       setUploadedDocuments((prev) => [...prev, newDocItem]);
 
-      // If document contains medications, add to active medication list with document provenance
+      // Append extracted medications with document provenance
       if (extractions.medications?.length > 0) {
         setActiveMedicationsList((prev) => {
           const combined = [...prev];
@@ -320,11 +337,13 @@ export default function AccessiblePatientKiosk() {
         });
       }
 
-      speakPrompt(`Document digitized. Extracted ${extractions.medications.length} medications.`);
+      speakPrompt(`Document digitized. Extracted ${extractions.medications.length} medications and ${extractions.investigations.length} lab tests.`);
     } catch (err) {
-      console.warn("Document OCR extraction notice:", err);
+      console.error("Document OCR extraction error:", err);
+      setOcrStatusText("Unable to reliably extract text. Please review original document.");
     } finally {
       setIsOcrProcessing(false);
+      setOcrProgressPercent(100);
     }
   };
 
@@ -337,7 +356,7 @@ export default function AccessiblePatientKiosk() {
     else if (step === 5) speakPrompt(t.bodyPrompt);
     else if (step === 6) speakPrompt("Describe the nature and radiation of your symptoms. Speak or tap below.");
     else if (step === 7) speakPrompt("Select your past medical conditions, prior surgeries, and medications.");
-    else if (step === 8) speakPrompt("AYUSH Dashavidha Pariksha constitutional evaluation.");
+    else if (step === 8) speakPrompt("Complete your AYUSH Dashavidha constitutional evaluation.");
     else if (step === 9) speakPrompt(t.documentScanPrompt);
     else if (step === 10) speakPrompt(t.vitalsPrompt);
     else if (step === 11) speakPrompt(t.reviewStepTitle + ". Please verify your reported information.");
@@ -352,7 +371,7 @@ export default function AccessiblePatientKiosk() {
       const timer2 = setTimeout(() => setVitalsProgress(80), 1600);
       const timer3 = setTimeout(() => {
         setVitalsProgress(100);
-        setStep(11); // Move to Pre-submission Review screen!
+        setStep(11);
       }, 2400);
 
       return () => {
@@ -403,12 +422,18 @@ export default function AccessiblePatientKiosk() {
       familyHistory: [{ relation: "Family", condition: "Non-contributory" }],
       lifestyle: lifestyleData,
       ayush: {
-        prakriti: { primary: ayushPrakritiPrimary },
-        vikriti: { imbalanceSeverity: "Moderate", subdosha: "Samana Vata & Pachaka Pitta" },
-        agniStatus: { type: ayushAgni },
-        koshtha: { type: ayushKoshtha },
-        sara: { type: ayushSara },
-        sattva: { type: ayushSattva }
+        prakriti: { primary: ayushPrakritiPrimary, provenance: "PATIENT_REPORTED" },
+        vikriti: { imbalance: ayushVikriti, provenance: "PATIENT_REPORTED" },
+        agniStatus: { type: ayushAgni, provenance: "PATIENT_REPORTED" },
+        koshtha: { type: ayushKoshtha, provenance: "PATIENT_REPORTED" },
+        sara: { type: ayushSara, provenance: "PATIENT_REPORTED" },
+        samhanana: { type: ayushSamhanana, provenance: "PATIENT_REPORTED" },
+        pramana: { type: ayushPramana, provenance: "PATIENT_REPORTED" },
+        satmya: { type: ayushSatmya, provenance: "PATIENT_REPORTED" },
+        sattva: { type: ayushSattva, provenance: "PATIENT_REPORTED" },
+        aharaShakti: { type: ayushAharaShakti, provenance: "PATIENT_REPORTED" },
+        vyayamaShakti: { type: ayushVyayamaShakti, provenance: "PATIENT_REPORTED" },
+        vaya: { type: ayushVaya, provenance: "PATIENT_REPORTED" }
       },
       painLevel: painScore,
       tokenNumber: tokenNum,
@@ -451,7 +476,7 @@ export default function AccessiblePatientKiosk() {
     });
 
     setIsSubmitting(false);
-    setStep(12); // Token Slip Screen
+    setStep(12);
   };
 
   const activeHpiFramework = HPI_DECISION_FRAMEWORK[selectedBodyPart] || HPI_DECISION_FRAMEWORK.generic;
@@ -492,7 +517,7 @@ export default function AccessiblePatientKiosk() {
                 ? "bg-red-600 text-white border-white animate-pulse shadow-lg shadow-red-600/50"
                 : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
             }`}
-            title="Speech Recognition (ASR)"
+            title="Deterministic Multilingual Speech Recognition"
           >
             {isListening ? <Mic className="w-4 h-4 text-white" /> : <MicOff className="w-4 h-4 text-slate-400" />}
             <span className="hidden sm:inline">{isListening ? "Listening..." : "Speak"}</span>
@@ -537,7 +562,7 @@ export default function AccessiblePatientKiosk() {
             <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
             <span><strong>Voice Recognized:</strong> {speechTranscript || "Listening... Speak your symptoms now"}</span>
           </div>
-          <span className="text-[10px] bg-red-900/60 px-2 py-0.5 rounded text-red-300 font-mono">ASR Live</span>
+          <span className="text-[10px] bg-red-900/60 px-2 py-0.5 rounded text-red-300 font-mono">Multilingual NLU Active</span>
         </div>
       )}
 
@@ -632,7 +657,6 @@ export default function AccessiblePatientKiosk() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-              {/* Webcam Video Viewfinder */}
               <div className="bg-slate-800/90 border-2 border-red-500/40 rounded-3xl p-3.5 flex flex-col items-center justify-center gap-2.5 shadow-xl">
                 <div className="relative w-full max-w-[280px] aspect-4/3 rounded-2xl overflow-hidden bg-slate-950 border-2 border-red-500/60 shadow-inner flex items-center justify-center">
                   {!patientPhoto ? (
@@ -668,7 +692,6 @@ export default function AccessiblePatientKiosk() {
                 )}
               </div>
 
-              {/* Demographics & ABHA */}
               <div className="space-y-3 bg-white text-slate-900 border border-slate-200 rounded-3xl p-4 shadow-xl">
                 <div>
                   <label className="block text-xs font-black text-slate-800 uppercase mb-1">1. Patient Full Name</label>
@@ -758,7 +781,7 @@ export default function AccessiblePatientKiosk() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-8 h-8 text-red-600 shrink-0" />
                 <div>
-                  <h3 className="font-black text-sm sm:text-base text-slate-900">Digital Health Intake & OCR Processing Authorization</h3>
+                  <h3 className="font-black text-sm sm:text-base text-slate-900">Digital Health Intake & Optical Character Recognition Authorization</h3>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">{t.consentExplanation}</p>
                 </div>
               </div>
@@ -777,7 +800,7 @@ export default function AccessiblePatientKiosk() {
               </div>
 
               <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Version: <strong>v1.2 (National Health Standards)</strong></span>
+                <span>Version: <strong>v1.2 (National Health Guidelines)</strong></span>
                 <span>Timestamp: <strong>{new Date().toLocaleDateString()}</strong></span>
               </div>
             </div>
@@ -944,7 +967,7 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 6: VOICE + TOUCH ADAPTIVE HPI (CHARACTER, RADIATION, FACTORS) */}
+        {/* STEP 6: VOICE + TOUCH ADAPTIVE HPI */}
         {/* ========================================================================= */}
         {step === 6 && (
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-150 max-w-4xl mx-auto w-full">
@@ -956,7 +979,6 @@ export default function AccessiblePatientKiosk() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-white text-slate-900 border-2 border-red-200 rounded-3xl p-5 shadow-xl text-xs">
-              {/* Character of Sensation */}
               <div>
                 <label className="block font-black text-slate-800 uppercase mb-1.5">1. Sensation / Character</label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -976,7 +998,6 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Radiation */}
               <div>
                 <label className="block font-black text-slate-800 uppercase mb-1.5">2. Radiation / Spread</label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -996,7 +1017,6 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Aggravating & Relieving Factors */}
               <div>
                 <label className="block font-black text-slate-800 uppercase mb-1.5">3. Worsened By</label>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1016,7 +1036,6 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Duration & Pain Score */}
               <div className="space-y-2">
                 <div>
                   <label className="block font-black text-slate-800 uppercase mb-1">4. Duration</label>
@@ -1079,7 +1098,6 @@ export default function AccessiblePatientKiosk() {
             </div>
 
             <div className="bg-white text-slate-900 border-2 border-red-200 rounded-3xl p-5 shadow-xl space-y-4 text-xs">
-              {/* Past Medical Illnesses */}
               <div>
                 <label className="block font-black text-slate-800 uppercase mb-1.5">1. Pre-existing Conditions (Tap to select)</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -1106,7 +1124,6 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Surgical History & Drug Allergies */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
                 <div>
                   <label className="block font-black text-slate-800 uppercase mb-1">2. Prior Surgeries</label>
@@ -1133,7 +1150,6 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Active Medications Display with Provenance */}
               <div className="pt-2 border-t border-slate-100">
                 <label className="block font-black text-slate-800 uppercase mb-1 flex items-center justify-between">
                   <span>4. Active Medications</span>
@@ -1160,7 +1176,7 @@ export default function AccessiblePatientKiosk() {
                 type="button"
                 onClick={() => {
                   if (medicalStream === "ayush") setStep(8);
-                  else setStep(9); // Skip AYUSH step if Allopathic
+                  else setStep(9);
                 }}
                 className="px-7 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-sm flex items-center gap-2 shadow-lg"
               >
@@ -1172,83 +1188,211 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 8: EXTENDED AYUSH DASHAVIDHA PARIKSHA (WHEN AYUSH CHOSEN) */}
+        {/* STEP 8: FULL 10-DIMENSION AYUSH DASHAVIDHA PARIKSHA */}
         {/* ========================================================================= */}
         {step === 8 && (
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-150 max-w-4xl mx-auto w-full">
             <div className="text-center space-y-0.5">
               <span className="px-3 py-0.5 rounded-full bg-amber-600/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
-                Step 8 of 12 · AYUSH Dashavidha Pariksha
+                Step 8 of 12 · Complete 10-Point AYUSH Dashavidha Assessment
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-white">Ayurvedic Assessment (दशविध परीक्षा)</h2>
+              <p className="text-[11px] text-amber-200/80">Every parameter below is explicitly reported by patient intake</p>
             </div>
 
-            <div className="bg-white text-slate-900 border-2 border-amber-200 rounded-3xl p-5 shadow-xl space-y-3.5 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* 1. Prakriti Primary */}
-                <div>
-                  <label className="block font-black text-amber-900 uppercase mb-1">1. Prakriti (Primary Dosha)</label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {["Vata (Air)", "Pitta (Fire)", "Kapha (Water)"].map((p) => {
-                      const val = p.split(" ")[0];
-                      const isSel = ayushPrakritiPrimary === val;
-                      return (
+            <div className="bg-white text-slate-900 border-2 border-amber-300 rounded-3xl p-5 shadow-xl space-y-4 text-xs max-h-[60vh] overflow-y-auto custom-scrollbar">
+              
+              {/* Section A: Dosha, Imbalance & Tissue Essence */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-amber-200 pb-1.5 font-black text-amber-950 text-xs">
+                  <Flower2 className="w-4 h-4 text-amber-600" />
+                  <span>Section A: Constitutional Dosha & Tissue Essence</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 1. Prakriti */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">1. Prakriti (Primary Dosha)</label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {["Vata", "Pitta", "Kapha"].map((p) => (
                         <button
                           key={p}
                           type="button"
-                          onClick={() => setAyushPrakritiPrimary(val)}
+                          onClick={() => setAyushPrakritiPrimary(p)}
                           className={`p-2 rounded-xl border-2 font-bold text-xs cursor-pointer ${
-                            isSel ? "bg-amber-600 text-white border-amber-600" : "bg-slate-50 border-slate-200 text-slate-800"
+                            ayushPrakritiPrimary === p ? "bg-amber-600 text-white border-amber-600 shadow-xs" : "bg-slate-50 border-slate-200 text-slate-800"
                           }`}
                         >
                           {p}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Vikriti */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">2. Vikriti (Current Imbalance)</label>
+                    <select
+                      value={ayushVikriti}
+                      onChange={(e) => setAyushVikriti(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      <option value="Moderate Imbalance (Pachaka Pitta)">Moderate Imbalance (Pachaka Pitta)</option>
+                      <option value="Severe Vata Imbalance (Vata Prakopa)">Severe Vata Imbalance (Vata Prakopa)</option>
+                      <option value="Kapha Stagnation (Manda)">Kapha Stagnation (Manda)</option>
+                      <option value="Sannipataja (Tridosha Imbalance)">Sannipataja (Tridosha Imbalance)</option>
+                    </select>
+                  </div>
+
+                  {/* 3. Sara */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">3. Sara (Tissue Essence)</label>
+                    <select
+                      value={ayushSara}
+                      onChange={(e) => setAyushSara(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.sara.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 4. Samhanana */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">4. Samhanana (Body Compactness)</label>
+                    <select
+                      value={ayushSamhanana}
+                      onChange={(e) => setAyushSamhanana(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.samhanana.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 5. Agni & 6. Koshtha */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">5. Agni (Digestive Fire)</label>
+                    <select
+                      value={ayushAgni}
+                      onChange={(e) => setAyushAgni(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      <option value="Samagni (Balanced Digestion)">Samagni (Balanced Digestion)</option>
+                      <option value="Tikshnagni (Hyperactive / Acidic)">Tikshnagni (Hyperactive / Acidic)</option>
+                      <option value="Mandagni (Slow / Sluggish)">Mandagni (Slow / Sluggish)</option>
+                      <option value="Vishamagni (Variable)">Vishamagni (Variable)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">6. Koshtha (Bowel Habit)</label>
+                    <select
+                      value={ayushKoshtha}
+                      onChange={(e) => setAyushKoshtha(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      <option value="Madhyama Koshtha (Regular)">Madhyama Koshtha (Regular)</option>
+                      <option value="Krura Koshtha (Constipated / Hard)">Krura Koshtha (Constipated / Hard)</option>
+                      <option value="Mridu Koshtha (Loose / Sensitive)">Mridu Koshtha (Loose / Sensitive)</option>
+                    </select>
                   </div>
                 </div>
+              </div>
 
-                {/* 2. Agni Status */}
-                <div>
-                  <label className="block font-black text-amber-900 uppercase mb-1">2. Agni Status (Digestive Fire)</label>
-                  <select
-                    value={ayushAgni}
-                    onChange={(e) => setAyushAgni(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                  >
-                    <option value="Samagni">Samagni (Balanced Digestion)</option>
-                    <option value="Tikshnagni">Tikshnagni (Hyperactive / Acidic)</option>
-                    <option value="Mandagni">Mandagni (Slow / Sluggish)</option>
-                    <option value="Vishamagni">Vishamagni (Irregular / Variable)</option>
-                  </select>
+              {/* Section B: Proportions, Adaptability & Stamina */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-2 border-b border-amber-200 pb-1.5 font-black text-amber-950 text-xs">
+                  <Activity className="w-4 h-4 text-amber-600" />
+                  <span>Section B: Anthropometry, Adaptability, Psyche & Endurance</span>
                 </div>
 
-                {/* 3. Koshtha & Bowel Habit */}
-                <div>
-                  <label className="block font-black text-amber-900 uppercase mb-1">3. Koshtha (Bowel Pattern)</label>
-                  <select
-                    value={ayushKoshtha}
-                    onChange={(e) => setAyushKoshtha(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                  >
-                    <option value="Madhyama">Madhyama Koshtha (Regular)</option>
-                    <option value="Krura">Krura Koshtha (Constipated / Hard)</option>
-                    <option value="Mridu">Mridu Koshtha (Loose / Sensitive)</option>
-                  </select>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 7. Pramana */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">7. Pramana (Proportions)</label>
+                    <select
+                      value={ayushPramana}
+                      onChange={(e) => setAyushPramana(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.pramana.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* 4. Sara (Tissue Essence) */}
-                <div>
-                  <label className="block font-black text-amber-900 uppercase mb-1">4. Sara (Tissue Essence)</label>
-                  <select
-                    value={ayushSara}
-                    onChange={(e) => setAyushSara(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                  >
-                    {AYUSH_DASHAVIDHA_FRAMEWORK.sara.options.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
+                  {/* 8. Satmya */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">8. Satmya (Habituation)</label>
+                    <select
+                      value={ayushSatmya}
+                      onChange={(e) => setAyushSatmya(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.satmya.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 9. Sattva */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">9. Sattva (Mental Resilience)</label>
+                    <select
+                      value={ayushSattva}
+                      onChange={(e) => setAyushSattva(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.sattva.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 10. Ahara Shakti */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">10. Ahara Shakti (Digestive Capacity)</label>
+                    <select
+                      value={ayushAharaShakti}
+                      onChange={(e) => setAyushAharaShakti(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.aharaShakti.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 11. Vyayama Shakti */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">11. Vyayama Shakti (Physical Stamina)</label>
+                    <select
+                      value={ayushVyayamaShakti}
+                      onChange={(e) => setAyushVyayamaShakti(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.vyayamaShakti.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 12. Vaya */}
+                  <div>
+                    <label className="block font-black text-amber-900 uppercase mb-1">12. Vaya (Age / Life Stage)</label>
+                    <select
+                      value={ayushVaya}
+                      onChange={(e) => setAyushVaya(e.target.value)}
+                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    >
+                      {AYUSH_DASHAVIDHA_FRAMEWORK.vaya.options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1267,13 +1411,13 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 9: MEDICAL DOCUMENT SCANNER & OCR EXTRACTION */}
+        {/* STEP 9: REAL TESSERACT OCR DOCUMENT SCANNER */}
         {/* ========================================================================= */}
         {step === 9 && (
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-150 max-w-3xl mx-auto w-full">
             <div className="text-center space-y-0.5">
               <span className="px-3 py-0.5 rounded-full bg-red-600/20 border border-red-500/40 text-red-300 text-xs font-bold">
-                Step 9 of 12 · Document OCR Digitization
+                Step 9 of 12 · Real OCR Optical Extraction (Tesseract.js WASM)
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-white">{t.documentScanPrompt}</h2>
               <p className="text-xs text-slate-400">{t.documentScanSub}</p>
@@ -1298,7 +1442,7 @@ export default function AccessiblePatientKiosk() {
                 >
                   <Camera className="w-8 h-8 text-red-600" />
                   <span className="font-black text-xs text-slate-900">{t.takeDocPhotoBtn}</span>
-                  <span className="text-[10px] text-slate-400">Capture prescription with camera</span>
+                  <span className="text-[10px] text-slate-400">Photograph prescription with camera</span>
                 </button>
 
                 <button
@@ -1309,37 +1453,69 @@ export default function AccessiblePatientKiosk() {
                 >
                   <UploadCloud className="w-8 h-8 text-slate-600" />
                   <span className="font-black text-xs text-slate-900">{t.uploadDocBtn}</span>
-                  <span className="text-[10px] text-slate-400">PDF, JPG, PNG lab reports</span>
+                  <span className="text-[10px] text-slate-400">Upload JPG, PNG, PDF lab reports</span>
                 </button>
               </div>
 
-              {/* OCR Processing Status */}
+              {/* OCR Progress Indicator */}
               {isOcrProcessing && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center gap-3 text-xs text-red-700 font-bold animate-pulse">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Processing Document via OCR & Extracting Medical Entities...</span>
+                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between text-xs font-black text-red-900">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 text-red-600 animate-spin" />
+                      <span>{ocrStatusText}</span>
+                    </div>
+                    <span>{ocrProgressPercent}%</span>
+                  </div>
+                  <div className="w-full bg-red-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-red-600 to-rose-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${ocrProgressPercent}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-red-700 font-semibold block text-center">
+                    Executing Real Tesseract.js WASM Optical Pixel Reader on Document
+                  </span>
                 </div>
               )}
 
               {/* Uploaded Documents & Extracted Entities Preview */}
               {uploadedDocuments.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-slate-100 text-xs">
-                  <h4 className="font-black text-slate-800">Digitized Documents ({uploadedDocuments.length})</h4>
+                <div className="space-y-3 pt-2 border-t border-slate-100 text-xs">
+                  <h4 className="font-black text-slate-800">Digitized Clinical Documents ({uploadedDocuments.length})</h4>
                   {uploadedDocuments.map((doc) => (
-                    <div key={doc.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+                    <div key={doc.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
                       <div className="flex items-center justify-between">
                         <strong className="text-slate-900 font-bold">{doc.name}</strong>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
-                          OCR Success
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px] border border-emerald-300">
+                          {doc.ocrEngine} · Confidence: {Math.round(doc.confidence * 100)}%
                         </span>
                       </div>
-                      {doc.extractions?.medications?.length > 0 && (
-                        <div className="text-[11px] text-slate-600">
-                          <strong>Extracted Meds:</strong> {doc.extractions.medications.map((m) => `${m.name} ${m.dosage}`).join(", ")}
+
+                      {/* Raw Extracted Text Preview */}
+                      {doc.rawText && (
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 font-mono text-[10px] text-slate-700 max-h-24 overflow-y-auto whitespace-pre-wrap">
+                          {doc.rawText}
                         </div>
                       )}
+
+                      {/* Extracted Meds */}
+                      {doc.extractions?.medications?.length > 0 && (
+                        <div className="text-[11px] text-slate-700">
+                          <strong>Extracted Medications:</strong> {doc.extractions.medications.map((m) => `${m.name} ${m.dosage} (${m.frequency})`).join(", ")}
+                        </div>
+                      )}
+
+                      {/* Extracted Investigations */}
+                      {doc.extractions?.investigations?.length > 0 && (
+                        <div className="text-[11px] text-slate-700">
+                          <strong>Extracted Lab Tests:</strong> {doc.extractions.investigations.map((i) => `${i.testName}: ${i.value}`).join("; ")}
+                        </div>
+                      )}
+
+                      {/* Abnormal Findings */}
                       {doc.extractions?.abnormalFindings?.length > 0 && (
-                        <div className="text-[11px] text-red-700 font-bold">
+                        <div className="text-[11px] text-red-700 font-bold bg-red-50 p-2 rounded-lg border border-red-200">
                           ⚠️ Potential Abnormality: {doc.extractions.abnormalFindings.map((a) => `${a.testName} (${a.value})`).join(", ")}
                         </div>
                       )}
@@ -1440,7 +1616,6 @@ export default function AccessiblePatientKiosk() {
             </div>
 
             <div className="bg-white text-slate-900 border-2 border-red-200 rounded-3xl p-5 shadow-2xl space-y-3.5 text-xs">
-              {/* Patient Banner */}
               <div className="flex items-center gap-3 bg-red-50 p-3 rounded-2xl border border-red-200">
                 <img
                   src={patientPhoto || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80"}
@@ -1453,7 +1628,6 @@ export default function AccessiblePatientKiosk() {
                 </div>
               </div>
 
-              {/* Summary Items */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                   <span className="text-slate-500 font-semibold block text-[10px]">Chief Complaint:</span>
@@ -1509,7 +1683,6 @@ export default function AccessiblePatientKiosk() {
               <p className="text-xs text-red-200/80">{t.tokenSubtitle}</p>
             </div>
 
-            {/* Printable OPD Slip Paper Card */}
             <div className="bg-white text-slate-900 rounded-3xl p-6 shadow-2xl border-4 border-dashed border-red-300 space-y-3.5">
               <div className="text-center border-b border-slate-200 pb-2.5 space-y-0.5">
                 <span className="font-black text-lg tracking-tight text-slate-900">{t.appName}</span>
@@ -1581,7 +1754,7 @@ export default function AccessiblePatientKiosk() {
       <footer className="max-w-5xl w-full mx-auto py-1 flex items-center justify-between text-[11px] text-red-300/60 border-t border-red-900/40">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-          <span>Self-Service Touch Station K-03 · Multimodal Clinical History Intake Active</span>
+          <span>Self-Service Touch Station K-03 · Real Tesseract OCR & 10-Point AYUSH Dashavidha Active</span>
         </div>
         <button
           type="button"

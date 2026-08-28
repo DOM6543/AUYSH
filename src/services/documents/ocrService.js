@@ -1,52 +1,96 @@
 /**
- * Document OCR & Text Acquisition Service
+ * Real Client-Side Medical Document OCR Engine
  * 
- * Provides a pluggable OCR abstraction for medical prescriptions, lab reports,
- * discharge summaries, and clinical documents.
+ * Powered by Tesseract.js / WASM.
+ * Performs true optical character recognition on uploaded image/scan pixels.
+ * No filename-based templates or simulated presets.
  */
+
+import { createWorker } from "tesseract.js";
 
 class OcrService {
   /**
-   * Process an image or PDF file and extract text lines
-   * @param {File|Blob|string} fileInput
-   * @param {Object} options
+   * Process an image or document and perform genuine optical character recognition
+   * @param {File|Blob|string} fileInput - Image file, blob, or base64 data URL
+   * @param {Object} options - { onProgress: (progressObj) => void, language: 'eng' }
    */
   async extractTextFromDocument(fileInput, options = {}) {
     if (!fileInput) {
       throw new Error("No document input provided for OCR extraction.");
     }
 
-    const fileName = typeof fileInput === "string" ? "document.jpg" : (fileInput.name || "scanned_document.pdf");
+    const fileName = typeof fileInput === "string" ? "scanned_document.jpg" : (fileInput.name || "uploaded_document.jpg");
     const fileType = typeof fileInput === "string" ? "image" : (fileInput.type?.includes("pdf") ? "pdf" : "image");
+    const onProgress = options.onProgress || (() => {});
 
     try {
-      // If file input is an actual Image or PDF, read data URI
-      let dataUrl = "";
-      if (typeof fileInput !== "string") {
-        dataUrl = await this.readFileAsDataUrl(fileInput);
-      } else {
-        dataUrl = fileInput;
+      onProgress({ status: "loading_image", progress: 0.1, message: "Preparing image for optical character recognition..." });
+
+      // Read image input
+      let imageSource = fileInput;
+      if (fileInput instanceof File || fileInput instanceof Blob) {
+        imageSource = await this.readFileAsDataUrl(fileInput);
       }
 
-      // Check if file name or sample text provides clinical hints for demonstration / client OCR
-      const simulatedText = this.performClientOcrPass(fileName, dataUrl);
+      onProgress({ status: "initializing_wasm", progress: 0.25, message: "Initializing Tesseract WASM OCR Engine..." });
+
+      // Create Tesseract Worker
+      const worker = await createWorker("eng", 1, {
+        logger: (m) => {
+          if (m.status === "recognizing text") {
+            const prog = 0.3 + (m.progress || 0) * 0.65;
+            onProgress({
+              status: "recognizing_text",
+              progress: Math.min(prog, 0.95),
+              message: `Reading document pixels (${Math.round((m.progress || 0) * 100)}%)...`
+            });
+          }
+        }
+      });
+
+      onProgress({ status: "extracting_characters", progress: 0.7, message: "Extracting clinical characters and lines..." });
+
+      const result = await worker.recognize(imageSource);
+      await worker.terminate();
+
+      const extractedText = (result.data?.text || "").trim();
+      const confidence = (result.data?.confidence || 0) / 100;
+
+      onProgress({ status: "completed", progress: 1.0, message: "Optical character recognition complete." });
+
+      if (!extractedText || extractedText.length < 5) {
+        return {
+          success: false,
+          documentName: fileName,
+          documentType: fileType,
+          rawText: "",
+          confidence: 0,
+          engine: "Tesseract.js WASM",
+          error: "Unable to reliably extract text. Please review the original document.",
+          processedAt: new Date().toISOString()
+        };
+      }
 
       return {
         success: true,
         documentName: fileName,
         documentType: fileType,
-        rawText: simulatedText,
-        confidence: 0.94,
-        pageCount: 1,
+        rawText: extractedText,
+        confidence: Math.round(confidence * 100) / 100,
+        engine: "Tesseract.js WASM",
+        lineCount: result.data?.lines?.length || 1,
         processedAt: new Date().toISOString()
       };
     } catch (error) {
-      console.warn("OCR pipeline fallback:", error);
+      console.error("Real Tesseract OCR execution failed:", error);
       return {
         success: false,
         documentName: fileName,
+        documentType: fileType,
         rawText: "",
-        error: error.message,
+        confidence: 0,
+        engine: "Tesseract.js WASM",
+        error: error.message || "Unable to reliably extract text. Please review the original document.",
         processedAt: new Date().toISOString()
       };
     }
@@ -59,68 +103,6 @@ class OcrService {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  }
-
-  /**
-   * Extensible rule/heuristic OCR text generator for clinical presets & client documents
-   */
-  performClientOcrPass(fileName, dataUrl) {
-    const lower = fileName.toLowerCase();
-    
-    if (lower.includes("lab") || lower.includes("blood") || lower.includes("report") || lower.includes("hba1c")) {
-      return `AIIMS CENTRAL CLINICAL PATHOLOGY LABORATORY
-DATE OF INVESTIGATION: 14/03/2024
-PATIENT NAME: ARUN KUMAR | AGE: 38 Y / M | UHID: AIIMS-DL-98231
-
-TEST NAME                     RESULT       BIOLOGICAL REF INTERVAL     UNITS
---------------------------------------------------------------------------------
-GLYCATED HEMOGLOBIN (HbA1c)    8.2         < 5.7 (Normal)              %
-                                           5.7 - 6.4 (Prediabetes)
-                                           >= 6.5 (Diabetes Mellitus)
-FASTING BLOOD GLUCOSE          168         70 - 99                     mg/dL
-POST PRANDIAL GLUCOSE (PPBS)   242         < 140                       mg/dL
-SERUM CREATININE               1.08        0.70 - 1.20                 mg/dL
-SERUM CHOLESTEROL TOTAL        238         < 200                       mg/dL
-SERUM TRIGLYCERIDES            195         < 150                       mg/dL
-
-INTERPRETATION:
-Glycemic parameters indicate Suboptimally Controlled Type 2 Diabetes Mellitus with elevated Atherogenic Lipid Profile. Clinical correlation advised.`;
-    }
-
-    if (lower.includes("rx") || lower.includes("prescription") || lower.includes("doctor")) {
-      return `AIIMS INTEGRATIVE MEDICINE & CARDIOLOGY OPD
-DATE OF CONSULTATION: 10/11/2023
-CONSULTANT: DR. S. RAMESH, MD, DM (CARDIOLOGY)
-
-DIAGNOSIS:
-1. Primary Essential Hypertension (Grade II)
-2. Suspected Exertional Angina Pectoris
-3. Dyslipidemia
-
-Rx (MEDICATIONS):
-1. Tab. Amlodipine 5 mg - 1 Tab Once Daily (OD) morning after breakfast
-2. Tab. Telmisartan 40 mg - 1 Tab Once Daily (OD)
-3. Tab. Atorvastatin 20 mg - 1 Tab Once Daily at bedtime (HS)
-4. Syp. Arjuna Ksheerapaka - 100 ml Twice Daily (BD) after meals
-
-INVESTIGATIONS ADVISED:
-- 12-Lead Resting ECG
-- 2D Echocardiography
-- Serum Lipid Profile fasting
-
-FOLLOW-UP: Review in OPD after 4 weeks with ECG report.`;
-    }
-
-    // Default medical document text if generic scan
-    return `AIIMS SMART CLINICAL HEALTH RECORD
-INGESTION DATE: ${new Date().toLocaleDateString('en-GB')}
-DOCUMENT REFERENCE: ${fileName}
-
-EXTRACTED CLINICAL TEXT:
-Patient presented with recurrent symptoms. Vital signs evaluated.
-Current Medication: Tab. Amlodipine 5mg OD.
-Past History: Hypertension, Dyslipidemia.
-Advised routine metabolic and cardiovascular follow-up.`;
   }
 }
 
