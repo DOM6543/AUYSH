@@ -48,8 +48,17 @@ export function generateStructuredClinicalSummary(patientData = {}) {
     chronicConditions: patientData.chronicConditions || []
   });
 
-  // 2. Synthesize HPI Sentences
+  // 2. Synthesize Structured HPI Sentences
   const hpiSentences = [];
+  if (duration && duration !== "fewDays") {
+    hpiSentences.push(`Duration: ${duration}`);
+  } else if (hpi.duration) {
+    hpiSentences.push(`Duration: ${hpi.duration}`);
+  }
+  if (hpi.specificSite || hpi.site || hpi.bodyArea) {
+    const sideStr = hpi.side ? `${hpi.side} ` : "";
+    hpiSentences.push(`Site: ${sideStr}${hpi.specificSite || hpi.site || hpi.bodyArea}`);
+  }
   if (hpi.character) {
     hpiSentences.push(`Character: ${hpi.character.replace(/_/g, " ")}`);
   }
@@ -59,16 +68,18 @@ export function generateStructuredClinicalSummary(patientData = {}) {
     hpiSentences.push("Radiation: Localized with no radiation");
   }
   if (hpi.aggravating) {
-    hpiSentences.push(`Aggravating factor: Exacerbated by ${hpi.aggravating.replace(/_/g, " ")}`);
+    hpiSentences.push(`Aggravating: Exacerbated by ${hpi.aggravating.replace(/_/g, " ")}`);
   }
   if (hpi.relieving) {
-    hpiSentences.push(`Relieving factor: Eased by ${hpi.relieving.replace(/_/g, " ")}`);
+    hpiSentences.push(`Relieving: Eased by ${hpi.relieving.replace(/_/g, " ")}`);
   }
-  if (hpi.associatedSymptoms && hpi.associatedSymptoms.length > 0) {
-    hpiSentences.push(`Associated symptoms: ${hpi.associatedSymptoms.map((s) => s.replace(/_/g, " ")).join(", ")}`);
+  if (hpi.associated && hpi.associated.length > 0) {
+    hpiSentences.push(`Associated: ${hpi.associated.map((s) => s.replace(/_/g, " ")).join(", ")}`);
+  } else if (hpi.associatedSymptoms && hpi.associatedSymptoms.length > 0) {
+    hpiSentences.push(`Associated: ${hpi.associatedSymptoms.map((s) => s.replace(/_/g, " ")).join(", ")}`);
   }
   if (painLevel > 0) {
-    hpiSentences.push(`Pain Severity: ${painLevel}/10 on Wong-Baker FACES scale`);
+    hpiSentences.push(`Pain Severity: ${painLevel}/10 on Wong-Baker scale`);
   }
 
   // 3. Synthesize Medications with Data Provenance
@@ -141,6 +152,7 @@ export function generateStructuredClinicalSummary(patientData = {}) {
       recommendedAction: triage.suggestedAction
     },
     chiefComplaint: `${chiefComplaint} (Onset: ${duration})`,
+    patientNarrative: patientData.patientNarrative || "",
     hpi: hpiSentences.length > 0 ? hpiSentences : [`Chief symptom reported: ${chiefComplaint}`, `Duration: ${duration}`],
     pastHistory: pastHistory.length > 0 ? pastHistory : (patientData.chronicConditions ? patientData.chronicConditions.map((c) => `Pre-existing: ${c}`) : ["No prior major illnesses reported"]),
     surgicalHistory: surgicalHistory.length > 0 ? surgicalHistory : ["No prior major surgeries"],

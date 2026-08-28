@@ -127,6 +127,25 @@ export default function PatientHeader() {
                 ABDM: Sandbox Pending
               </span>
 
+              {/* Treatment System Badge */}
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border shadow-xs ${
+                (patient.treatmentSystem || patient.careSystem) === "SIDDHA"
+                  ? "bg-teal-100 text-teal-900 border-teal-300"
+                  : (patient.treatmentSystem || patient.careSystem) === "UNANI"
+                  ? "bg-amber-100 text-amber-900 border-amber-300"
+                  : (patient.treatmentSystem || patient.careSystem) === "HOMEOPATHY"
+                  ? "bg-blue-100 text-blue-900 border-blue-300"
+                  : (patient.treatmentSystem || patient.careSystem) === "YOGA_NATUROPATHY"
+                  ? "bg-indigo-100 text-indigo-900 border-indigo-300"
+                  : "bg-emerald-100 text-emerald-900 border-emerald-300"
+              }`}>
+                {(patient.treatmentSystem || patient.careSystem) === "SIDDHA" ? "🌿 SIDDHA" :
+                 (patient.treatmentSystem || patient.careSystem) === "UNANI" ? "🏺 UNANI" :
+                 (patient.treatmentSystem || patient.careSystem) === "HOMEOPATHY" ? "💊 HOMEOPATHY" :
+                 (patient.treatmentSystem || patient.careSystem) === "YOGA_NATUROPATHY" ? "🧘 YOGA & NATUROPATHY" :
+                 "🌿 AYURVEDA"}
+              </span>
+
               {patient.chiefComplaint && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-red-50 text-red-800 border border-red-200">
                   {patient.chiefComplaint}

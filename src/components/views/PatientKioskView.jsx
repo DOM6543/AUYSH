@@ -1,6 +1,6 @@
 import React from "react";
-import AccessiblePatientKiosk from "../kiosk/AccessiblePatientKiosk";
+import PatientKioskApp from "../kiosk/PatientKioskApp";
 
 export default function PatientKioskView() {
-  return <AccessiblePatientKiosk />;
+  return <PatientKioskApp />;
 }

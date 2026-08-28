@@ -41,12 +41,20 @@ export default function HistoryTabs() {
   const [noteCategory, setNoteCategory] = useState("Clinical Progress Note");
   const fileInputRef = useRef(null);
 
+  const system = patient?.treatmentSystem || patient?.careSystem || "AYURVEDA";
+  const ayushTabLabel =
+    system === "SIDDHA" ? "🌿 Siddha Assessment" :
+    system === "UNANI" ? "🏺 Unani Assessment" :
+    system === "HOMEOPATHY" ? "💊 Homeopathy Modalities" :
+    system === "YOGA_NATUROPATHY" ? "🧘 Yoga & Naturopathy Assessment" :
+    "🌿 AYUSH Dashavidha";
+
   const tabs = [
     { id: "5sec", label: "⚡ 5-Second Scan" },
     { id: "hpi", label: "Structured HPI & History" },
     { id: "notes", label: `Doctor Notes (${clinicalNotes.length})` },
     { id: "timeline", label: `Doc Timeline (${documents.length})` },
-    { id: "ayush", label: "AYUSH Dashavidha" },
+    { id: "ayush", label: ayushTabLabel },
     { id: "vitals", label: "Vitals Telemetry" },
     { id: "examination", label: "Physical Exam" },
     { id: "lifestyle", label: "Lifestyle" },
@@ -138,163 +146,113 @@ export default function HistoryTabs() {
                       <li key={idx}>{alert}</li>
                     ))}
                   </ul>
-                  <div className="text-[11px] text-red-950 font-bold pt-1">
-                    Suggested Action: <strong>{triage.suggestedAction}</strong>
-                  </div>
                 </div>
               )}
-
-              {/* Quick Meds & Vitals */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-2.5 bg-white rounded-xl border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Medications</span>
-                  <div className="font-bold text-slate-900 mt-1">
-                    {patient?.medications?.length > 0 ? patient.medications.map((m) => `${m.name} (${m.dosage || ""})`).join(", ") : "None reported"}
-                  </div>
-                </div>
-                <div className="p-2.5 bg-white rounded-xl border border-slate-200">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sensor Telemetry</span>
-                  <div className="font-bold text-slate-900 mt-1">
-                    BP: <strong className="text-red-700">{patient?.vitals?.bp?.value || "128/84"}</strong> | Pulse: {patient?.vitals?.pulse?.value || "78"} | SpO2: {patient?.vitals?.spo2?.value || "98%"}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 1: STRUCTURED HPI & MEDICAL HISTORY */}
+        {/* TAB 1: STRUCTURED HPI & HISTORY */}
         {/* ========================================================================= */}
         {activeTab === "hpi" && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            {/* Kiosk Intake Telemetry Banner */}
-            <div className="bg-red-50/70 border border-red-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
-                <strong className="text-slate-900 font-black">Kiosk Intake:</strong>
-                <span className="text-slate-700 font-semibold">{patient?.chiefComplaint || aiSummary.chiefComplaint}</span>
-              </div>
-              <div className="flex items-center gap-3 text-[11px] text-slate-600">
-                <span>Duration: <strong className="text-slate-900">{patient?.duration || "2 - 3 Days"}</strong></span>
-                <span>·</span>
-                <span>Pain Score: <strong className="text-red-700">{patient?.painLevel ?? 4}/10</strong></span>
-                <span>·</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
-                  Auto-Approved
-                </span>
-              </div>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Structured HPI / OPQRST */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Sparkles className="w-4 h-4 text-red-600" />
+                  <h4 className="font-bold text-slate-900 text-xs">Structured History of Present Illness (HPI)</h4>
+                </div>
 
-            {/* History of Presenting Illness (HPI) Sentences */}
-            <div>
-              <h4 className="font-bold text-slate-800 text-xs mb-1.5">
-                History of Presenting Illness (HPI)
-              </h4>
-              <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-700">
-                {(aiSummary.hpi || []).map((line, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 mt-1.5 shrink-0" />
-                    <span className="leading-relaxed">{line}</span>
+                <div className="space-y-2 text-slate-700">
+                  <div className="flex justify-between border-b border-slate-50 pb-1">
+                    <span className="text-slate-400 font-medium">Onset & Chronicity:</span>
+                    <strong className="text-slate-900">{patient?.hpi?.duration || patient?.duration || "2 - 3 Days"}</strong>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Pre-existing Medical Conditions & Surgeries */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <h4 className="font-bold text-slate-800 text-xs mb-1.5">
-                  Pre-existing Conditions
-                </h4>
-                <div className="space-y-1 text-slate-600">
-                  {(aiSummary.pastHistory || []).map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200 font-semibold text-slate-800">
-                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
+                  <div className="flex justify-between border-b border-slate-50 pb-1">
+                    <span className="text-slate-400 font-medium">Sensation / Quality:</span>
+                    <strong className="text-slate-900 uppercase">{patient?.hpi?.character || "Heaviness / Pressure"}</strong>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-50 pb-1">
+                    <span className="text-slate-400 font-medium">Radiation / Spread:</span>
+                    <strong className="text-slate-900">{patient?.hpi?.radiation || "Left arm & jaw"}</strong>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-50 pb-1">
+                    <span className="text-slate-400 font-medium">Aggravating Factors:</span>
+                    <strong className="text-slate-900">{patient?.hpi?.aggravating || "Exertion / walking"}</strong>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-50 pb-1">
+                    <span className="text-slate-400 font-medium">Relieving Factors:</span>
+                    <strong className="text-slate-900">{patient?.hpi?.relieving || "Rest / Sitting"}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-medium">Pain Severity:</span>
+                    <strong className="text-red-700 font-black">{patient?.hpi?.painScore ?? patient?.painLevel ?? 4} / 10</strong>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-bold text-slate-800 text-xs mb-1.5">
-                  Surgical Procedures
-                </h4>
-                <div className="space-y-1 text-slate-600">
-                  {(patient?.surgicalHistory || aiSummary.surgicalHistory || ["No prior major surgeries"]).map((surg, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200 font-semibold text-slate-800">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                      <span>{surg}</span>
-                    </div>
-                  ))}
+              {/* Medical History & Allergies */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Pill className="w-4 h-4 text-red-600" />
+                  <h4 className="font-bold text-slate-900 text-xs">Past Illnesses & Drug Allergies</h4>
                 </div>
-              </div>
-            </div>
 
-            {/* Active Medications with Data Provenance Badges */}
-            <div>
-              <h4 className="font-bold text-slate-800 text-xs mb-1.5 flex items-center justify-between">
-                <span>Active Medications (with Data Provenance)</span>
-                <span className="text-[10px] text-slate-400">Provenance Verified</span>
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {(patient?.medications || aiSummary.medications || []).map((m, idx) => (
-                  <div key={idx} className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <Pill className="w-3.5 h-3.5 text-red-600" />
-                        <strong className="text-slate-900">{typeof m === "string" ? m : m.name}</strong>
-                      </div>
-                      {typeof m === "object" && (
-                        <div className="text-[11px] text-slate-600 mt-0.5">
-                          {m.dosage} · {m.frequency}
-                        </div>
-                      )}
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Known Co-Morbidities</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(patient?.medicalHistory?.pastIllnesses || ["None"]).map((illness, idx) => (
+                        <span key={idx} className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded-md font-bold text-[11px] border border-slate-200">
+                          {illness}
+                        </span>
+                      ))}
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
-                      m.provenance === "DOCUMENT_EXTRACTED"
-                        ? "bg-purple-50 text-purple-800 border-purple-200"
-                        : "bg-blue-50 text-blue-800 border-blue-200"
-                    }`}>
-                      {m.source || "Patient Reported"}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Daily Medications</span>
+                    <span className="text-xs text-slate-700 font-semibold block mt-0.5">
+                      {patient?.medicalHistory?.takesDailyMeds ? "💊 Prescribed Daily Medicines Active" : "❌ No regular daily medications"}
                     </span>
                   </div>
-                ))}
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Drug Allergies</span>
+                    <span className={`text-xs font-bold block mt-0.5 ${patient?.medicalHistory?.hasAllergies ? "text-amber-700" : "text-emerald-700"}`}>
+                      {patient?.medicalHistory?.hasAllergies ? "⚠️ Drug Allergies Reported" : "✅ No known drug allergies (NKDA)"}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 2: DOCTOR CLINICAL PROGRESS NOTES */}
+        {/* TAB 2: DOCTOR CLINICAL NOTES */}
         {/* ========================================================================= */}
         {activeTab === "notes" && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            {/* Note Editor Form */}
-            <form onSubmit={handleCreateNote} className="bg-white border-2 border-red-200 rounded-2xl p-4 shadow-sm space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <form onSubmit={handleCreateNote} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold">
-                    <FileText className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-black text-slate-900 text-xs">
-                    Write Doctor Progress Note for {patient?.name}
-                  </span>
+                  <FileText className="w-4 h-4 text-red-600" />
+                  <h4 className="font-bold text-slate-900 text-xs">Add Doctor Consultation Note</h4>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <select
                     value={noteCategory}
                     onChange={(e) => setNoteCategory(e.target.value)}
-                    className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-red-500"
+                    className="p-1 px-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700 text-xs font-bold outline-none"
                   >
-                    <option value="Clinical Progress Note">Clinical Progress Note</option>
-                    <option value="Prescription & Dosage">Prescription & Dosage</option>
-                    <option value="Diagnostic Assessment">Diagnostic Assessment</option>
-                    <option value="Follow-up Instructions">Follow-up Instructions</option>
+                    <option>Clinical Progress Note</option>
+                    <option>Prescription & Advice</option>
+                    <option>Diagnostic Order</option>
+                    <option>Follow-up Plan</option>
                   </select>
-
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -308,7 +266,7 @@ export default function HistoryTabs() {
                     className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
                   >
                     <Paperclip className="w-3.5 h-3.5" />
-                    <span>Attach Doc</span>
+                    <span>Attach</span>
                   </button>
                 </div>
               </div>
@@ -433,112 +391,235 @@ export default function HistoryTabs() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: EXTENDED AYUSH DASHAVIDHA PARIKSHA (10-DIMENSIONS) */}
+        {/* TAB 4: AYUSH / SYSTEM SPECIFIC ASSESSMENT */}
         {/* ========================================================================= */}
         {activeTab === "ayush" && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="bg-amber-50/80 border-2 border-amber-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌿</span>
-                <div>
-                  <strong className="text-amber-950 font-black text-sm block">AYUSH Dashavidha Pariksha (दशविध परीक्षा)</strong>
-                  <span className="text-[11px] text-amber-800">10-Point Holistic Ayurvedic Examination · Patient-Reported Assessment</span>
+            {/* 1. AYURVEDA ASSESSMENT */}
+            {system === "AYURVEDA" && (
+              <div className="space-y-3">
+                <div className="bg-emerald-50/80 border-2 border-emerald-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🌿</span>
+                    <div>
+                      <strong className="text-emerald-950 font-black text-sm block">AYUSH Dashavidha Pariksha (दशविध परीक्षा)</strong>
+                      <span className="text-[11px] text-emerald-800">10-Point Holistic Ayurvedic Examination · Patient-Reported Assessment</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 rounded-full font-black text-[11px] border border-emerald-300 shadow-xs">
+                    Prakriti: {patient?.ayurveda?.prakriti || ayushInfo?.prakriti?.primary || "Pitta"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Agni Status (Digestive Power)</span>
+                    <div className="font-bold text-slate-900">{patient?.ayurveda?.agni || "Samagni (Balanced)"}</div>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Koshtha (Bowel Pattern)</span>
+                    <div className="font-bold text-slate-900">{patient?.ayurveda?.koshtha || "Madhyama (Regular)"}</div>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Prakriti (Thermal Constitution)</span>
+                    <div className="font-bold text-slate-900">{patient?.ayurveda?.prakriti || "Pitta Predominant"}</div>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Vyayama Shakti (Physical Stamina)</span>
+                    <div className="font-bold text-slate-900">{patient?.ayurveda?.stamina || "Pravara (High Stamina)"}</div>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">5. Sattva & Nidra (Sleep & Mind)</span>
+                    <div className="font-bold text-slate-900">{patient?.ayurveda?.sleep || "Prasanna (Deep Sleep)"}</div>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
                 </div>
               </div>
-              <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-full font-black text-[11px] border border-amber-300 shadow-xs">
-                Prakriti: {ayushInfo?.prakriti?.primary || "Pitta"}
-              </span>
-            </div>
+            )}
 
-            {/* Panel 1: Constitutional & Tissue Dimensions */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-black text-amber-950 uppercase tracking-wider block">Section 1: Dosha Constitution, Imbalance & Tissue Essence</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Prakriti (Constitution)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.prakriti?.primary || "Pitta"} Dominant</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+            {/* 2. SIDDHA ASSESSMENT */}
+            {system === "SIDDHA" && (
+              <div className="space-y-3">
+                <div className="bg-teal-50/80 border-2 border-teal-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🌿</span>
+                    <div>
+                      <strong className="text-teal-950 font-black text-sm block">Siddha Mukkutram & Envagai Thervu (சித்தா முக்குற்றம்)</strong>
+                      <span className="text-[11px] text-teal-800">Tridosha Humoral Balance (Vatham, Pitham, Kabam) · Patient-Reported Intake</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-teal-100 text-teal-900 rounded-full font-black text-[11px] border border-teal-300 shadow-xs">
+                    Dominance: {patient?.siddha?.theham || "Vatham (Joint Comfort)"}
+                  </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Vikriti (Dosha Imbalance)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.vikriti?.imbalance || ayushInfo?.vikriti?.subdosha || "Moderate Imbalance"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Theham & Mukkutram (Joints & Bodily Heat)</span>
+                    <div className="font-bold text-slate-900">{patient?.siddha?.theham || "Vatham (Joint Stiffness/Dryness)"}</div>
+                    <span className="text-[9px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Sara (Tissue Essence)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.sara?.type || "Rakta Sara (Blood Essence)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
-              </div>
-            </div>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Suvai (Taste Preference & Digestive Suitability)</span>
+                    <div className="font-bold text-slate-900">{patient?.siddha?.suvai || "Inippu (Sweet / Nourishing)"}</div>
+                    <span className="text-[9px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
 
-            {/* Panel 2: Digestion, Bowel & Compactness */}
-            <div className="space-y-2 pt-1 border-t border-slate-100">
-              <span className="text-[10px] font-black text-amber-950 uppercase tracking-wider block">Section 2: Digestive Fire, Bowel Pattern & Body Build</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Agni Status (Digestive Fire)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.agniStatus?.type || "Tikshnagni (Hyperactive)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Valimai (Physical Endurance & Vigor)</span>
+                    <div className="font-bold text-slate-900">{patient?.siddha?.valimai || "Uttama Valimai (High Vigor)"}</div>
+                    <span className="text-[9px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">5. Koshtha (Bowel Pattern)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.koshtha?.type || "Madhyama Koshtha"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
-
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">6. Samhanana (Body Build)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.samhanana?.type || "Susambaddha (Well-compacted)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Amaidhi & Thookkam (Mental Composure & Sleep)</span>
+                    <div className="font-bold text-slate-900">{patient?.siddha?.amaidhi || "Amaidhi (Deep Calm Sleep)"}</div>
+                    <span className="text-[9px] text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Panel 3: Anthropometry, Adaptability, Mental Resilience & Life Stage */}
-            <div className="space-y-2 pt-1 border-t border-slate-100">
-              <span className="text-[10px] font-black text-amber-950 uppercase tracking-wider block">Section 3: Proportions, Adaptability, Psyche & Endurance</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">7. Pramana (Proportions)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.pramana?.type || "Sama Pramana (Proportionate)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+            {/* 3. UNANI ASSESSMENT */}
+            {system === "UNANI" && (
+              <div className="space-y-3">
+                <div className="bg-amber-50/80 border-2 border-amber-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🏺</span>
+                    <div>
+                      <strong className="text-amber-950 font-black text-sm block">Unani Mizaj, Akhlat & Quwa (طب یونانی - مزاج و اخلاط)</strong>
+                      <span className="text-[11px] text-amber-800">Four Humours (Dam, Balgham, Safra, Sawda) · Patient Intake Profile</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-full font-black text-[11px] border border-amber-300 shadow-xs">
+                    Mizaj: {patient?.unani?.mizaj || "Damawi (Sanguine)"}
+                  </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">8. Satmya (Diet Adaptability)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.satmya?.type || "Sarva Rasa Satmya (All 6 Tastes)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Mizaj (Natural Bodily Temperament)</span>
+                    <div className="font-bold text-slate-900">{patient?.unani?.mizaj || "Damawi (Sanguine / Warm & Moist)"}</div>
+                    <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">9. Sattva (Mental Strength)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.sattva?.type || "Pravara Sattva (High Resilience)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Hazm & Atash (Appetite & Thirst Patterns)</span>
+                    <div className="font-bold text-slate-900">{patient?.unani?.hazm || "Hazm Sari (Fast Digestion)"}</div>
+                    <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">10. Ahara Shakti (Ingestion Power)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.aharaShakti?.type || "Abhyavaharana Shakti Uttama"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Quwa (Physical Vitality & Strength)</span>
+                    <div className="font-bold text-slate-900">{patient?.unani?.quwa || "Quwa Qawiyya (Robust Vital Strength)"}</div>
+                    <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
 
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">11. Vyayama Shakti (Stamina)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.vyayamaShakti?.type || "Pravara (High Endurance)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
-                </div>
-
-                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block">12. Vaya (Biological Stage)</span>
-                  <div className="font-bold text-slate-900">{ayushInfo?.vaya?.type || "Madhyama (Adult Stage)"}</div>
-                  <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Naum & Khwab (Sleep Quality & Dreams)</span>
+                    <div className="font-bold text-slate-900">{patient?.unani?.naum || "Naum Mutadil (Sound 7-8h Sleep)"}</div>
+                    <span className="text-[9px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* 4. HOMEOPATHY ASSESSMENT */}
+            {system === "HOMEOPATHY" && (
+              <div className="space-y-3">
+                <div className="bg-blue-50/80 border-2 border-blue-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">💊</span>
+                    <div>
+                      <strong className="text-blue-950 font-black text-sm block">Homeopathic Constitutional Modalities & Generals</strong>
+                      <span className="text-[11px] text-blue-800">Thermal Reactions, Thirst Modalities & Mental Generals</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-blue-100 text-blue-900 rounded-full font-black text-[11px] border border-blue-300 shadow-xs">
+                    Thermal: {patient?.homeopathy?.thermal || "Chilly"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Thermal Reaction (Cold vs Heat Sensitivity)</span>
+                    <div className="font-bold text-slate-900">{patient?.homeopathy?.thermal || "Chilly Patient"}</div>
+                    <span className="text-[9px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Thirst & Water Modalities</span>
+                    <div className="font-bold text-slate-900">{patient?.homeopathy?.thirst || "Thirst for Large Quantities"}</div>
+                    <span className="text-[9px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Weather & Time Modalities (Aggravations)</span>
+                    <div className="font-bold text-slate-900">{patient?.homeopathy?.weather || "Aggravated by Damp / Cold Weather"}</div>
+                    <span className="text-[9px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Mental & Emotional Generals</span>
+                    <div className="font-bold text-slate-900">{patient?.homeopathy?.mind || "Calm, Quiet & Contented"}</div>
+                    <span className="text-[9px] text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. YOGA & NATUROPATHY ASSESSMENT */}
+            {system === "YOGA_NATUROPATHY" && (
+              <div className="space-y-3">
+                <div className="bg-indigo-50/80 border-2 border-indigo-300 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🧘</span>
+                    <div>
+                      <strong className="text-indigo-950 font-black text-sm block">Yoga Therapy & Naturopathy Holistic Profile</strong>
+                      <span className="text-[11px] text-indigo-800">Physical Movement, Regularity, Stress Profile & Therapeutic Goals</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-indigo-100 text-indigo-900 rounded-full font-black text-[11px] border border-indigo-300 shadow-xs">
+                    Goal: {patient?.yogaNaturopathy?.goal || "Pain Relief & Joint Mobility"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">1. Physical Activity / Sedentary Index</span>
+                    <div className="font-bold text-slate-900">{patient?.yogaNaturopathy?.activity || "Moderate Activity (Daily Chores)"}</div>
+                    <span className="text-[9px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">2. Regularity of Yoga / Exercise Practice</span>
+                    <div className="font-bold text-slate-900">{patient?.yogaNaturopathy?.practice || "Regular Practitioner"}</div>
+                    <span className="text-[9px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">3. Stress & Muscle Tension Profile</span>
+                    <div className="font-bold text-slate-900">{patient?.yogaNaturopathy?.stress || "Calm & Relaxed"}</div>
+                    <span className="text-[9px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">4. Primary Naturopathy & Yoga Therapy Goal</span>
+                    <div className="font-bold text-slate-900">{patient?.yogaNaturopathy?.goal || "Pain Relief & Joint Mobility"}</div>
+                    <span className="text-[9px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">Patient Reported</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

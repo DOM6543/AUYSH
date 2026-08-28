@@ -39,38 +39,62 @@ export function PatientProvider({ children }) {
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const t = TRANSLATIONS[currentLanguage] || TRANSLATIONS.en;
 
-  // Portal Authentication Mode: 'login' | 'doctor' | 'kiosk'
+  // Portal Application Mode: 'gateway' | 'patient' | 'doctor'
   const getInitialPortalMode = () => {
     if (typeof window !== "undefined") {
+      const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       const search = window.location.search.toLowerCase();
-      if (hash.includes("kiosk") || search.includes("kiosk")) return "kiosk";
-      if (hash.includes("doctor") || search.includes("doctor")) return "doctor";
+      
+      if (path.includes("/patient") || path.includes("/kiosk") || hash.includes("patient") || hash.includes("kiosk") || search.includes("patient") || search.includes("kiosk")) {
+        return "patient";
+      }
+      if (path.includes("/doctor") || hash.includes("doctor") || search.includes("doctor")) {
+        return "doctor";
+      }
     }
-    return "login";
+    return "gateway";
   };
 
   const [portalMode, setPortalModeState] = useState(getInitialPortalMode);
 
   const setPortalMode = (mode) => {
-    setPortalModeState(mode);
+    const normalizedMode = mode === "kiosk" ? "patient" : mode === "login" ? "gateway" : mode;
+    setPortalModeState(normalizedMode);
     if (typeof window !== "undefined") {
-      if (mode === "kiosk") window.location.hash = "kiosk";
-      else if (mode === "doctor") window.location.hash = "doctor";
-      else window.location.hash = "";
+      if (normalizedMode === "patient") {
+        window.history.pushState({}, "", "/patient");
+      } else if (normalizedMode === "doctor") {
+        window.history.pushState({}, "", "/doctor");
+      } else {
+        window.history.pushState({}, "", "/");
+      }
     }
   };
 
   useEffect(() => {
-    const handleHash = () => {
+    const handleNavigation = () => {
+      const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
-      if (hash.includes("kiosk")) setPortalModeState("kiosk");
-      else if (hash.includes("doctor")) setPortalModeState("doctor");
-      else if (!hash) setPortalModeState("login");
+      const search = window.location.search.toLowerCase();
+      
+      if (path.includes("/patient") || path.includes("/kiosk") || hash.includes("patient") || hash.includes("kiosk") || search.includes("patient") || search.includes("kiosk")) {
+        setPortalModeState("patient");
+      } else if (path.includes("/doctor") || hash.includes("doctor") || search.includes("doctor")) {
+        setPortalModeState("doctor");
+      } else {
+        setPortalModeState("gateway");
+      }
     };
-    window.addEventListener("hashchange", handleHash);
-    return () => window.removeEventListener("hashchange", handleHash);
+
+    window.addEventListener("popstate", handleNavigation);
+    window.addEventListener("hashchange", handleNavigation);
+    return () => {
+      window.removeEventListener("popstate", handleNavigation);
+      window.removeEventListener("hashchange", handleNavigation);
+    };
   }, []);
+
   const [currentUser, setCurrentUser] = useState({
     name: "Dr. Ramesh Kumar",
     role: "Chief Physician & OPD Head",
@@ -83,7 +107,7 @@ export function PatientProvider({ children }) {
   };
 
   const logoutToPortal = () => {
-    setPortalMode("login");
+    setPortalMode("gateway");
   };
 
   const [activeTab, setActiveTab] = useState("history"); // history, ayush, vitals, examination, lifestyle

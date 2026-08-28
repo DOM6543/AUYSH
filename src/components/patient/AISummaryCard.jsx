@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit2, AlertCircle, Sparkles, ShieldCheck, Check, AlertTriangle, Pill, FileText } from "lucide-react";
+import { Edit2, AlertCircle, Sparkles, ShieldCheck, Check, AlertTriangle, Pill, FileText, Cpu } from "lucide-react";
 import { usePatient } from "../../context/PatientContext";
 import HistoryTabs from "./HistoryTabs";
 
@@ -48,7 +48,7 @@ export default function AISummaryCard() {
         {/* Top Grid: Left (CC, HPI, Meds, Allergies) & Right (Red Flags & Suggestions) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left Column (7 cols) */}
-          <div className="lg:col-span-7 space-y-3.5 text-xs">
+          <div className="lg:col-span-7 space-y-3 text-xs">
             {/* Chief Complaint (CC) */}
             <div>
               <h4 className="font-black text-slate-800 uppercase tracking-wider text-[10px] mb-0.5">
@@ -58,6 +58,18 @@ export default function AISummaryCard() {
                 {aiSummary.chiefComplaint || patient.chiefComplaint}
               </p>
             </div>
+
+            {/* Patient's Own Description (Verbatim Narrative) */}
+            {(patient.patientNarrative || aiSummary.patientNarrative) && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                  Patient Description (Verbatim Narrative)
+                </span>
+                <p className="text-slate-900 font-semibold italic text-xs">
+                  "{patient.patientNarrative || aiSummary.patientNarrative}"
+                </p>
+              </div>
+            )}
 
             {/* History of Present Illness (HPI) */}
             <div>

@@ -602,11 +602,21 @@ export async function submitKioskIntakeToFirebase(kioskIntake) {
     isNewPatient: true,
     mobile: kioskIntake.phone || kioskIntake.mobile || "+91 98765 00000",
     language: kioskIntake.language || "English",
-    medicalStream: kioskIntake.medicalStream || "ayush",
+    treatmentSystem: kioskIntake.treatmentSystem || "AYURVEDA",
+    careSystem: kioskIntake.treatmentSystem || kioskIntake.careSystem || "AYURVEDA",
+    patientNarrative: kioskIntake.patientNarrative || "",
+    extractedData: kioskIntake.extractedData || {},
+    ayurveda: kioskIntake.ayurveda || null,
+    siddha: kioskIntake.siddha || null,
+    unani: kioskIntake.unani || null,
+    homeopathy: kioskIntake.homeopathy || null,
+    yogaNaturopathy: kioskIntake.yogaNaturopathy || null,
+    medicalHistory: kioskIntake.medicalHistory || null,
+    medicalStream: "ayush",
     registrationType: "Kiosk Walk-in",
     status: "Reviewed", // Auto-approved
     verified: true, // Auto-approved
-    consultationType: kioskIntake.department || (kioskIntake.medicalStream === "ayush" ? "AIIMS AYUSH OPD" : "General Allopathic OPD"),
+    consultationType: kioskIntake.department || (kioskIntake.treatmentSystem ? `${kioskIntake.treatmentSystem} OPD` : "AIIMS AYUSH OPD"),
     lastUpdated: "Just now",
     avatarUrl: kioskIntake.photo || (kioskIntake.gender === "female" 
       ? "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"
@@ -627,7 +637,7 @@ export async function submitKioskIntakeToFirebase(kioskIntake) {
     stats: {
       chiefComplaint: { title: "Chief Complaint", value: kioskIntake.chiefComplaint || "Routine Checkup", subtitle: "Kiosk intake" },
       kioskSession: { title: "Kiosk Session", value: "May 26, 2025", subtitle: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-      consultationType: { title: "Consultation Type", value: kioskIntake.department || "General OPD", subtitle: "New Consultation" },
+      consultationType: { title: "Consultation Type", value: kioskIntake.department || (kioskIntake.treatmentSystem ? `${kioskIntake.treatmentSystem} OPD` : "General AYUSH OPD"), subtitle: "New Consultation" },
       redFlags: { 
         title: "Red Flags", 
         value: triage.tier, 
