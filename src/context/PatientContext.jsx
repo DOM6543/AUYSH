@@ -134,27 +134,42 @@ export function PatientProvider({ children }) {
     if (!selectedPatientId) return;
 
     const unsubscribeSingle = subscribeToPatient(selectedPatientId, (patientData) => {
-      if (patientData) {
-        // Ensure arrays exist even if null in Firebase
+      let resolvedData = patientData;
+      if (!resolvedData) {
+        // Fallback to local list if not yet synced in Firebase
+        resolvedData = (patientsList || []).find((p) => p.id === selectedPatientId)
+          || defaultPatientsList.find((p) => p.id === selectedPatientId);
+      }
+
+      if (resolvedData) {
         const sanitized = {
           ...initialPatientData,
-          ...patientData,
-          ayush: patientData.ayush || ayushData,
-          examination: patientData.examination || initialPatientData.examination,
-          lifestyle: patientData.lifestyle || initialPatientData.lifestyle,
-          documents: patientData.documents
-            ? (Array.isArray(patientData.documents) ? patientData.documents : Object.values(patientData.documents))
+          ...resolvedData,
+          id: selectedPatientId,
+          name: resolvedData.name || "Patient",
+          avatarUrl: resolvedData.avatarUrl || resolvedData.photo || initialPatientData.avatarUrl,
+          verified: true,
+          status: "Reviewed",
+          ayush: resolvedData.ayush || ayushData,
+          examination: resolvedData.examination || initialPatientData.examination,
+          lifestyle: resolvedData.lifestyle || initialPatientData.lifestyle,
+          clinicalNotes: resolvedData.clinicalNotes
+            ? (Array.isArray(resolvedData.clinicalNotes) ? resolvedData.clinicalNotes : Object.values(resolvedData.clinicalNotes))
+            : [],
+          documents: resolvedData.documents
+            ? (Array.isArray(resolvedData.documents) ? resolvedData.documents : Object.values(resolvedData.documents))
             : initialPatientData.documents || [],
-          timeline: patientData.timeline || initialPatientData.timeline || [],
+          timeline: resolvedData.timeline || initialPatientData.timeline || [],
           aiSummary: {
             ...initialPatientData.aiSummary,
-            ...patientData.aiSummary,
-            hpi: patientData.aiSummary?.hpi || initialPatientData.aiSummary?.hpi || [],
-            pastHistory: patientData.aiSummary?.pastHistory || initialPatientData.aiSummary?.pastHistory || [],
-            medications: patientData.aiSummary?.medications || initialPatientData.aiSummary?.medications || [],
-            allergies: patientData.aiSummary?.allergies || initialPatientData.aiSummary?.allergies || [],
-            suggestions: patientData.aiSummary?.suggestions || initialPatientData.aiSummary?.suggestions || [],
-            familyHistory: patientData.aiSummary?.familyHistory || initialPatientData.aiSummary?.familyHistory || []
+            ...resolvedData.aiSummary,
+            chiefComplaint: resolvedData.chiefComplaint || resolvedData.aiSummary?.chiefComplaint || initialPatientData.aiSummary?.chiefComplaint,
+            hpi: resolvedData.aiSummary?.hpi || initialPatientData.aiSummary?.hpi || [],
+            pastHistory: resolvedData.aiSummary?.pastHistory || initialPatientData.aiSummary?.pastHistory || [],
+            medications: resolvedData.aiSummary?.medications || initialPatientData.aiSummary?.medications || [],
+            allergies: resolvedData.aiSummary?.allergies || initialPatientData.aiSummary?.allergies || [],
+            suggestions: resolvedData.aiSummary?.suggestions || initialPatientData.aiSummary?.suggestions || [],
+            familyHistory: resolvedData.aiSummary?.familyHistory || initialPatientData.aiSummary?.familyHistory || []
           }
         };
         setPatient(sanitized);
@@ -162,7 +177,48 @@ export function PatientProvider({ children }) {
     });
 
     return () => unsubscribeSingle();
-  }, [selectedPatientId]);
+  }, [selectedPatientId, patientsList]);
+
+  // Download Comprehensive Patient EHR Dossier
+  const downloadPatientData = (targetPatient = patient) => {
+    if (!targetPatient) return;
+    const exportPayload = {
+      hospital: "AIIMS Smart OPD Network - MediKiosk Health Record",
+      exportTimestamp: new Date().toISOString(),
+      patientDetails: {
+        id: targetPatient.id,
+        name: targetPatient.name,
+        age: targetPatient.age,
+        gender: targetPatient.gender,
+        abhaNumber: targetPatient.abhaNumber,
+        mobile: targetPatient.mobile || targetPatient.phone,
+        registrationType: targetPatient.registrationType,
+        status: targetPatient.status,
+        avatarUrl: targetPatient.avatarUrl || targetPatient.photo
+      },
+      clinicalIntake: {
+        chiefComplaint: targetPatient.chiefComplaint || targetPatient.aiSummary?.chiefComplaint,
+        duration: targetPatient.duration || "N/A",
+        specificSymptoms: targetPatient.specificSymptoms || [],
+        chronicConditions: targetPatient.chronicConditions || [],
+        painScore: targetPatient.painLevel ?? targetPatient.painScore ?? 4,
+        vitals: targetPatient.vitals
+      },
+      ayushAssessment: targetPatient.ayush || ayushData,
+      clinicalProgressNotes: targetPatient.clinicalNotes || [],
+      documents: targetPatient.documents || [],
+      timeline: targetPatient.timeline || []
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `EHR_${(targetPatient.name || "Patient").replace(/\\s+/g, "_")}_${targetPatient.id}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast(`EHR Dossier for ${targetPatient.name} downloaded successfully!`, "success");
+  };
 
   // Actions writing back to Firebase
   const handleAcceptAndSave = async () => {
@@ -368,6 +424,7 @@ export function PatientProvider({ children }) {
         updateSummaryData,
         uploadNewDocument,
         addClinicalNote,
+        downloadPatientData,
         refreshVitals,
         submitKioskIntake,
         chatMessages,
