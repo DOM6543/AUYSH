@@ -43,7 +43,8 @@ import {
   Square,
   AlertCircle,
   Cpu,
-  Layers
+  Layers,
+  Sparkle
 } from "lucide-react";
 import { usePatient } from "../../context/PatientContext";
 import LanguageSelector from "../common/LanguageSelector";
@@ -73,7 +74,7 @@ export default function AccessiblePatientKiosk() {
   // 5: Chief Complaint & Visual Body Map
   // 6: Voice + Touch Adaptive HPI Interview
   // 7: Complete Medical & Surgical History + Meds + Allergies
-  // 8: Full 10-Dimension AYUSH Dashavidha Pariksha (when AYUSH chosen)
+  // 8: Conversational 1-Question-at-a-Time AYUSH Assessment (when AYUSH chosen)
   // 9: Real Tesseract.js OCR Document Scanner & Entity Preview
   // 10: 1-Touch Machine Vitals Calibration
   // 11: Pre-Submission Review & Verification Screen
@@ -125,13 +126,14 @@ export default function AccessiblePatientKiosk() {
     activity: "Moderate"
   });
 
-  // Complete 10-Dimension AYUSH Dashavidha State (All Patient Reported)
+  // AYUSH Dashavidha State (Clinical Mappings - All Patient Reported)
+  const [ayushStep, setAyushStep] = useState(0); // 0 = Intro, 1-12 = 1 Question per screen
   const [ayushPrakritiPrimary, setAyushPrakritiPrimary] = useState("Pitta");
   const [ayushVikriti, setAyushVikriti] = useState("Moderate Imbalance (Pachaka Pitta)");
-  const [ayushAgni, setAyushAgni] = useState("Tikshnagni (Hyperactive / Acidic)");
-  const [ayushKoshtha, setAyushKoshtha] = useState("Madhyama Koshtha (Regular)");
   const [ayushSara, setAyushSara] = useState("Rakta Sara (Blood Essence)");
   const [ayushSamhanana, setAyushSamhanana] = useState("Susambaddha (Well-compacted / Strong build)");
+  const [ayushAgni, setAyushAgni] = useState("Tikshnagni (Hyperactive / Acidic)");
+  const [ayushKoshtha, setAyushKoshtha] = useState("Madhyama Koshtha (Regular)");
   const [ayushPramana, setAyushPramana] = useState("Sama Pramana (Proportionate height-to-span)");
   const [ayushSatmya, setAyushSatmya] = useState("Sarva Rasa Satmya (All 6 tastes wholesome)");
   const [ayushSattva, setAyushSattva] = useState("Pravara Sattva (High emotional resilience)");
@@ -324,7 +326,6 @@ export default function AccessiblePatientKiosk() {
 
       setUploadedDocuments((prev) => [...prev, newDocItem]);
 
-      // Append extracted medications with document provenance
       if (extractions.medications?.length > 0) {
         setActiveMedicationsList((prev) => {
           const combined = [...prev];
@@ -347,6 +348,182 @@ export default function AccessiblePatientKiosk() {
     }
   };
 
+  // 12 Conversational, Patient-Facing AYUSH Questions Definition
+  const AYUSH_QUESTIONS = [
+    {
+      index: 1,
+      title: "1. Body Nature & Energy",
+      prompt: "Which one sounds most like you?",
+      sub: "Choose what best describes your natural body type and personality",
+      currentValue: ayushPrakritiPrimary,
+      setter: setAyushPrakritiPrimary,
+      options: [
+        { id: "Vata", icon: "🌬️", label: "Light & Quick", desc: "Active, light frame, quick movements and thoughts", value: "Vata" },
+        { id: "Pitta", icon: "🔥", label: "Warm & Active", desc: "Warm body temperature, sharp appetite, strong energy", value: "Pitta" },
+        { id: "Kapha", icon: "🌿", label: "Strong & Steady", desc: "Calm nature, sturdy solid build, steady pace", value: "Kapha" }
+      ]
+    },
+    {
+      index: 2,
+      title: "2. Current Discomfort",
+      prompt: "How does your body feel right now?",
+      sub: "Select what best describes your discomfort today",
+      currentValue: ayushVikriti,
+      setter: setAyushVikriti,
+      options: [
+        { id: "mild", icon: "🙂", label: "Mostly Normal", desc: "Feeling reasonably comfortable with only minor issues", value: "Mild Imbalance (Normal State)" },
+        { id: "pitta", icon: "🔥", label: "Burning & Heat", desc: "Acidity, burning sensations in stomach, or feeling hot", value: "Moderate Imbalance (Pachaka Pitta)" },
+        { id: "vata", icon: "💨", label: "Aches & Restlessness", desc: "Body stiffness, gas pain, dryness, or joint aches", value: "Severe Vata Imbalance (Vata Prakopa)" },
+        { id: "kapha", icon: "😴", label: "Heavy & Sluggish", desc: "Congestion, heavy feeling in head/chest, or tiredness", value: "Kapha Stagnation (Manda)" }
+      ]
+    },
+    {
+      index: 3,
+      title: "3. Body Strength & Vitality",
+      prompt: "How is your overall body strength and vitality?",
+      sub: "Your physical resilience and general vitality",
+      currentValue: ayushSara,
+      setter: setAyushSara,
+      options: [
+        { id: "mamsa", icon: "💪", label: "Strong Muscles", desc: "Good muscle firmness, strength and stamina", value: "Mamsa Sara (Muscle Essence)" },
+        { id: "rakta", icon: "🩸", label: "Healthy Skin & Blood", desc: "Good circulation, bright eyes and clear skin", value: "Rakta Sara (Blood Essence)" },
+        { id: "asthi", icon: "🦴", label: "Firm Bones & Joints", desc: "Strong bone structure and firm posture", value: "Asthi Sara (Bone Essence)" },
+        { id: "sarva", icon: "✨", label: "Balanced Vitality", desc: "Overall strong immune health and good energy", value: "Sarva Sara (Excellent Essence)" }
+      ]
+    },
+    {
+      index: 4,
+      title: "4. Body Build & Firmness",
+      prompt: "How is your body build and firmness?",
+      sub: "Your natural physical compactness",
+      currentValue: ayushSamhanana,
+      setter: setAyushSamhanana,
+      options: [
+        { id: "solid", icon: "🏋️", label: "Solid & Strong", desc: "Well-built, compact and sturdy frame", value: "Susambaddha (Well-compacted / Strong build)" },
+        { id: "medium", icon: "🚶", label: "Medium Build", desc: "Average build and normal compactness", value: "Madhyama (Moderate compactness)" },
+        { id: "slim", icon: "🌿", label: "Delicate & Slim", desc: "Light, slim or delicate body frame", value: "Heena (Light / Delicate build)" }
+      ]
+    },
+    {
+      index: 5,
+      title: "5. Digestion & Appetite",
+      prompt: "How is your digestion usually?",
+      sub: "How comfortably your stomach digests meals",
+      currentValue: ayushAgni,
+      setter: setAyushAgni,
+      options: [
+        { id: "tikshna", icon: "🔥", label: "Very Strong / Fast", desc: "Get hungry quickly and digest food very fast", value: "Tikshnagni (Hyperactive / Acidic)" },
+        { id: "sama", icon: "🙂", label: "Normal & Balanced", desc: "Digest food comfortably and on time", value: "Samagni (Balanced Digestion)" },
+        { id: "manda", icon: "🐢", label: "Slow & Heavy", desc: "Takes a long time to digest, feels heavy", value: "Mandagni (Slow / Sluggish)" },
+        { id: "vishama", icon: "🔄", label: "Changes Often", desc: "Sometimes fast, sometimes slow or irregular", value: "Vishamagni (Irregular / Variable)" }
+      ]
+    },
+    {
+      index: 6,
+      title: "6. Bowel Movements",
+      prompt: "How are your bowel movements usually?",
+      sub: "Your daily morning bowel habit",
+      currentValue: ayushKoshtha,
+      setter: setAyushKoshtha,
+      options: [
+        { id: "regular", icon: "🙂", label: "Regular & Normal", desc: "Smooth and regular once daily", value: "Madhyama Koshtha (Regular)" },
+        { id: "soft", icon: "💧", label: "Soft / Frequent", desc: "Loose or sensitive to certain foods", value: "Mridu Koshtha (Loose / Sensitive)" },
+        { id: "hard", icon: "🚽", label: "Hard / Difficult", desc: "Dry stools, constipation prone", value: "Krura Koshtha (Constipated / Hard)" }
+      ]
+    },
+    {
+      index: 7,
+      title: "7. Body Proportions",
+      prompt: "How is your height and body proportions?",
+      sub: "Symmetry of your height and limb span",
+      currentValue: ayushPramana,
+      setter: setAyushPramana,
+      options: [
+        { id: "sama", icon: "📏", label: "Well Proportioned", desc: "Balanced height and arm span", value: "Sama Pramana (Proportionate height-to-span)" },
+        { id: "vishama", icon: "🚶", label: "Slightly Uneven", desc: "Very tall, slender or unequal proportions", value: "Visham Pramana (Disproportionate)" }
+      ]
+    },
+    {
+      index: 8,
+      title: "8. Food Adaptability",
+      prompt: "What kind of food suits your body best?",
+      sub: "How your body handles different tastes and foods",
+      currentValue: ayushSatmya,
+      setter: setAyushSatmya,
+      options: [
+        { id: "all", icon: "🍽️", label: "All Kinds of Food", desc: "Can eat spicy, sour, sweet foods easily", value: "Sarva Rasa Satmya (All 6 tastes wholesome)" },
+        { id: "regular", icon: "🍲", label: "Regular Home Food", desc: "Most normal home meals suit me well", value: "Vyashrita Satmya (Specific foods suit)" },
+        { id: "simple", icon: "🥗", label: "Only Specific Foods", desc: "Need simple, light or specific diet", value: "Eka Rasa Satmya (Monodiet habituated)" }
+      ]
+    },
+    {
+      index: 9,
+      title: "9. Mental Resilience",
+      prompt: "How do you handle mental stress?",
+      sub: "Your emotional calmness and patience",
+      currentValue: ayushSattva,
+      setter: setAyushSattva,
+      options: [
+        { id: "calm", icon: "🧠", label: "Calm & Strong", desc: "Stay patient, peaceful and positive during difficulty", value: "Pravara Sattva (High emotional resilience)" },
+        { id: "moderate", icon: "🙂", label: "Moderate Tolerance", desc: "Handle everyday worries normally", value: "Madhyama Sattva (Moderate tolerance)" },
+        { id: "anxious", icon: "😟", label: "Worry Easily", desc: "Feel anxious, restless or sensitive quickly", value: "Avara Sattva (Low stress tolerance/Anxious)" }
+      ]
+    },
+    {
+      index: 10,
+      title: "10. Food Intake Capacity",
+      prompt: "How is your daily food intake capacity?",
+      sub: "How much food you can eat comfortably",
+      currentValue: ayushAharaShakti,
+      setter: setAyushAharaShakti,
+      options: [
+        { id: "good", icon: "🍽️", label: "Full / Good Meals", desc: "Good appetite, easily finish a full plate", value: "Abhyavaharana Shakti Uttama (Good intake & digestion)" },
+        { id: "medium", icon: "🙂", label: "Moderate Portion", desc: "Eat medium portion comfortably", value: "Madhyama (Moderate intake)" },
+        { id: "small", icon: "🥄", label: "Small Appetite", desc: "Get full very quickly, eat little food", value: "Avara (Low intake capacity)" }
+      ]
+    },
+    {
+      index: 11,
+      title: "11. Physical Activity & Stamina",
+      prompt: "How much physical activity can you usually do?",
+      sub: "Your physical endurance and daily energy",
+      currentValue: ayushVyayamaShakti,
+      setter: setAyushVyayamaShakti,
+      options: [
+        { id: "high", icon: "💪", label: "A Lot / High Stamina", desc: "Can do hard physical work and long walks", value: "Pravara (High physical capacity & stamina)" },
+        { id: "moderate", icon: "🚶", label: "Some Activity", desc: "Can do daily walks and routine chores", value: "Madhyama (Moderate physical endurance)" },
+        { id: "low", icon: "😴", label: "A Little / Tire Easily", desc: "Feel tired quickly after short walking", value: "Avara (Low stamina / Tires quickly)" }
+      ]
+    },
+    {
+      index: 12,
+      title: "12. Life Stage",
+      prompt: "Which life stage best describes you?",
+      sub: "Your current age period",
+      currentValue: ayushVaya,
+      setter: setAyushVaya,
+      options: [
+        { id: "young", icon: "🌱", label: "Youth / Young", desc: "Under 25 years old", value: "Bala / Taruna (Growth Stage)" },
+        { id: "adult", icon: "🌳", label: "Adult", desc: "25 to 59 years old", value: "Madhyama (Adult / Maintenance Stage)" },
+        { id: "senior", icon: "🍂", label: "Senior / Elder", desc: "60 years or older", value: "Vridha (Senior / Degenerative Stage)" }
+      ]
+    }
+  ];
+
+  // Helper to read current AYUSH question aloud
+  const speakCurrentAyushQuestion = (idx) => {
+    if (!audioEnabled) return;
+    if (idx === 0) {
+      speakPrompt("Ayurvedic health questions. Let us learn a little about your body and nature. Tap start to begin.");
+      return;
+    }
+    const q = AYUSH_QUESTIONS[idx - 1];
+    if (q) {
+      const optionsText = q.options.map((o) => o.label).join(". ");
+      speakPrompt(`${q.prompt}. Options are: ${optionsText}. Tap your answer on screen.`);
+    }
+  };
+
   // Voice Guidance on Step Changes
   useEffect(() => {
     if (step === 1) speakPrompt(t.langPrompt);
@@ -356,12 +533,12 @@ export default function AccessiblePatientKiosk() {
     else if (step === 5) speakPrompt(t.bodyPrompt);
     else if (step === 6) speakPrompt("Describe the nature and radiation of your symptoms. Speak or tap below.");
     else if (step === 7) speakPrompt("Select your past medical conditions, prior surgeries, and medications.");
-    else if (step === 8) speakPrompt("Complete your AYUSH Dashavidha constitutional evaluation.");
+    else if (step === 8) speakCurrentAyushQuestion(ayushStep);
     else if (step === 9) speakPrompt(t.documentScanPrompt);
     else if (step === 10) speakPrompt(t.vitalsPrompt);
     else if (step === 11) speakPrompt(t.reviewStepTitle + ". Please verify your reported information.");
     else if (step === 12) speakPrompt(t.tokenTitle);
-  }, [step, currentLanguage]);
+  }, [step, ayushStep, currentLanguage]);
 
   // Simulate Vitals Reading on Step 10
   useEffect(() => {
@@ -480,6 +657,7 @@ export default function AccessiblePatientKiosk() {
   };
 
   const activeHpiFramework = HPI_DECISION_FRAMEWORK[selectedBodyPart] || HPI_DECISION_FRAMEWORK.generic;
+  const currentAyushQ = ayushStep > 0 && ayushStep <= 12 ? AYUSH_QUESTIONS[ayushStep - 1] : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-[#180808] to-slate-950 text-white flex flex-col justify-between p-3 sm:p-5 font-sans select-none">
@@ -543,6 +721,7 @@ export default function AccessiblePatientKiosk() {
             type="button"
             onClick={() => {
               setStep(1);
+              setAyushStep(0);
               setPatientName("");
               setPatientPhoto(null);
               setUploadedDocuments([]);
@@ -1175,8 +1354,12 @@ export default function AccessiblePatientKiosk() {
               <button
                 type="button"
                 onClick={() => {
-                  if (medicalStream === "ayush") setStep(8);
-                  else setStep(9);
+                  if (medicalStream === "ayush") {
+                    setAyushStep(0);
+                    setStep(8);
+                  } else {
+                    setStep(9);
+                  }
                 }}
                 className="px-7 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-sm flex items-center gap-2 shadow-lg"
               >
@@ -1188,225 +1371,191 @@ export default function AccessiblePatientKiosk() {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 8: FULL 10-DIMENSION AYUSH DASHAVIDHA PARIKSHA */}
+        {/* STEP 8: NEW ACCESSIBLE 1-QUESTION-PER-SCREEN AYUSH CONVERSATIONAL FLOW */}
         {/* ========================================================================= */}
         {step === 8 && (
-          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-150 max-w-4xl mx-auto w-full">
-            <div className="text-center space-y-0.5">
-              <span className="px-3 py-0.5 rounded-full bg-amber-600/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
-                Step 8 of 12 · Complete 10-Point AYUSH Dashavidha Assessment
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black text-white">Ayurvedic Assessment (दशविध परीक्षा)</h2>
-              <p className="text-[11px] text-amber-200/80">Every parameter below is explicitly reported by patient intake</p>
-            </div>
-
-            <div className="bg-white text-slate-900 border-2 border-amber-300 rounded-3xl p-5 shadow-xl space-y-4 text-xs max-h-[60vh] overflow-y-auto custom-scrollbar">
-              
-              {/* Section A: Dosha, Imbalance & Tissue Essence */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-amber-200 pb-1.5 font-black text-amber-950 text-xs">
-                  <Flower2 className="w-4 h-4 text-amber-600" />
-                  <span>Section A: Constitutional Dosha & Tissue Essence</span>
+          <div className="space-y-5 animate-in fade-in zoom-in-95 duration-150 max-w-2xl mx-auto w-full">
+            
+            {/* AYUSH Sub-Step 0: Intro Welcome Screen */}
+            {ayushStep === 0 && (
+              <div className="bg-white text-slate-900 border-4 border-amber-400 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center">
+                <div className="w-20 h-20 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center mx-auto text-4xl shadow-inner border-2 border-amber-300 animate-bounce">
+                  🌿
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* 1. Prakriti */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">1. Prakriti (Primary Dosha)</label>
-                    <div className="grid grid-cols-3 gap-1">
-                      {["Vata", "Pitta", "Kapha"].map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => setAyushPrakritiPrimary(p)}
-                          className={`p-2 rounded-xl border-2 font-bold text-xs cursor-pointer ${
-                            ayushPrakritiPrimary === p ? "bg-amber-600 text-white border-amber-600 shadow-xs" : "bg-slate-50 border-slate-200 text-slate-800"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="space-y-2">
+                  <span className="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider border border-amber-300">
+                    AYUSH Health Questions
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    Let's learn a little about you
+                  </h2>
+                  <p className="text-sm sm:text-base text-slate-600 max-w-md mx-auto leading-relaxed">
+                    We will ask a few simple questions with pictures about your body and digestion.
+                  </p>
+                </div>
 
-                  {/* 2. Vikriti */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">2. Vikriti (Current Imbalance)</label>
-                    <select
-                      value={ayushVikriti}
-                      onChange={(e) => setAyushVikriti(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      <option value="Moderate Imbalance (Pachaka Pitta)">Moderate Imbalance (Pachaka Pitta)</option>
-                      <option value="Severe Vata Imbalance (Vata Prakopa)">Severe Vata Imbalance (Vata Prakopa)</option>
-                      <option value="Kapha Stagnation (Manda)">Kapha Stagnation (Manda)</option>
-                      <option value="Sannipataja (Tridosha Imbalance)">Sannipataja (Tridosha Imbalance)</option>
-                    </select>
-                  </div>
+                <div className="p-4 bg-amber-50 rounded-2xl border-2 border-amber-200 flex items-center justify-center gap-3 text-xs sm:text-sm font-bold text-amber-900">
+                  <Volume2 className="w-5 h-5 text-amber-700 shrink-0" />
+                  <span>Tap the speaker icon on any screen to hear the question aloud.</span>
+                </div>
 
-                  {/* 3. Sara */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">3. Sara (Tissue Essence)</label>
-                    <select
-                      value={ayushSara}
-                      onChange={(e) => setAyushSara(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.sara.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => speakCurrentAyushQuestion(0)}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-800 font-black text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Volume2 className="w-5 h-5 text-amber-600" />
+                    <span>🔊 Hear Introduction</span>
+                  </button>
 
-                  {/* 4. Samhanana */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">4. Samhanana (Body Compactness)</label>
-                    <select
-                      value={ayushSamhanana}
-                      onChange={(e) => setAyushSamhanana(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.samhanana.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 5. Agni & 6. Koshtha */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">5. Agni (Digestive Fire)</label>
-                    <select
-                      value={ayushAgni}
-                      onChange={(e) => setAyushAgni(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      <option value="Samagni (Balanced Digestion)">Samagni (Balanced Digestion)</option>
-                      <option value="Tikshnagni (Hyperactive / Acidic)">Tikshnagni (Hyperactive / Acidic)</option>
-                      <option value="Mandagni (Slow / Sluggish)">Mandagni (Slow / Sluggish)</option>
-                      <option value="Vishamagni (Variable)">Vishamagni (Variable)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">6. Koshtha (Bowel Habit)</label>
-                    <select
-                      value={ayushKoshtha}
-                      onChange={(e) => setAyushKoshtha(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      <option value="Madhyama Koshtha (Regular)">Madhyama Koshtha (Regular)</option>
-                      <option value="Krura Koshtha (Constipated / Hard)">Krura Koshtha (Constipated / Hard)</option>
-                      <option value="Mridu Koshtha (Loose / Sensitive)">Mridu Koshtha (Loose / Sensitive)</option>
-                    </select>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAyushStep(1)}
+                    className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-amber-600/30 cursor-pointer active:scale-95"
+                  >
+                    <span>START QUESTIONS</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* Section B: Proportions, Adaptability & Stamina */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
-                <div className="flex items-center gap-2 border-b border-amber-200 pb-1.5 font-black text-amber-950 text-xs">
-                  <Activity className="w-4 h-4 text-amber-600" />
-                  <span>Section B: Anthropometry, Adaptability, Psyche & Endurance</span>
+            {/* AYUSH Questions 1 to 12: ONE SINGLE QUESTION PER SCREEN */}
+            {ayushStep >= 1 && ayushStep <= 12 && currentAyushQ && (
+              <div className="bg-white text-slate-900 border-4 border-amber-400 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5">
+                
+                {/* Visual Dot Progress Bar */}
+                <div className="space-y-1.5 text-center">
+                  <div className="flex items-center justify-between text-xs font-black text-amber-900">
+                    <span className="flex items-center gap-1.5">
+                      <Flower2 className="w-4 h-4 text-amber-600" />
+                      <span>{currentAyushQ.title}</span>
+                    </span>
+                    <span className="bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300 text-amber-950 font-bold">
+                      Question {currentAyushQ.index} of 12
+                    </span>
+                  </div>
+
+                  {/* 12 Visual Progress Dots */}
+                  <div className="flex justify-center items-center gap-1.5 py-1">
+                    {AYUSH_QUESTIONS.map((q) => (
+                      <div
+                        key={q.index}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          q.index === ayushStep
+                            ? "w-6 bg-amber-600"
+                            : q.index < ayushStep
+                            ? "w-2.5 bg-amber-400"
+                            : "w-2 bg-slate-200"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
 
+                {/* Big Question & Audio Button */}
+                <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200 text-center space-y-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
+                    {currentAyushQ.prompt}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                    {currentAyushQ.sub}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => speakCurrentAyushQuestion(ayushStep)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                  >
+                    <Volume2 className="w-4 h-4 text-amber-700" />
+                    <span>🔊 Hear Question</span>
+                  </button>
+                </div>
+
+                {/* Large, Accessible Visual Answer Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* 7. Pramana */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">7. Pramana (Proportions)</label>
-                    <select
-                      value={ayushPramana}
-                      onChange={(e) => setAyushPramana(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.pramana.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 8. Satmya */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">8. Satmya (Habituation)</label>
-                    <select
-                      value={ayushSatmya}
-                      onChange={(e) => setAyushSatmya(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.satmya.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 9. Sattva */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">9. Sattva (Mental Resilience)</label>
-                    <select
-                      value={ayushSattva}
-                      onChange={(e) => setAyushSattva(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.sattva.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 10. Ahara Shakti */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">10. Ahara Shakti (Digestive Capacity)</label>
-                    <select
-                      value={ayushAharaShakti}
-                      onChange={(e) => setAyushAharaShakti(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.aharaShakti.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 11. Vyayama Shakti */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">11. Vyayama Shakti (Physical Stamina)</label>
-                    <select
-                      value={ayushVyayamaShakti}
-                      onChange={(e) => setAyushVyayamaShakti(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.vyayamaShakti.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 12. Vaya */}
-                  <div>
-                    <label className="block font-black text-amber-900 uppercase mb-1">12. Vaya (Age / Life Stage)</label>
-                    <select
-                      value={ayushVaya}
-                      onChange={(e) => setAyushVaya(e.target.value)}
-                      className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold"
-                    >
-                      {AYUSH_DASHAVIDHA_FRAMEWORK.vaya.options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {currentAyushQ.options.map((opt) => {
+                    const isSelected = currentAyushQ.currentValue === opt.value;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          currentAyushQ.setter(opt.value);
+                          speakPrompt(opt.label);
+                        }}
+                        className={`p-4 sm:p-5 rounded-2xl border-3 transition-all flex items-center gap-3.5 text-left cursor-pointer active:scale-95 shadow-md ${
+                          isSelected
+                            ? "bg-amber-50 border-amber-600 shadow-xl ring-4 ring-amber-400/30 scale-[1.02]"
+                            : "bg-white hover:bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <span className="text-4xl shrink-0">{opt.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <strong className="text-base font-black text-slate-900 block truncate">
+                              {opt.label}
+                            </strong>
+                            {isSelected && <Check className="w-5 h-5 text-amber-700 stroke-[3]" />}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                            {opt.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <button type="button" onClick={() => setStep(7)} className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs flex items-center gap-1.5">
-                <ChevronLeft className="w-4 h-4" />
-                <span>{t.backBtn}</span>
-              </button>
-              <button type="button" onClick={() => setStep(9)} className="px-7 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-sm flex items-center gap-2 shadow-lg">
-                <span>{t.nextBtn}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+                {/* Bottom Navigation Buttons */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (ayushStep === 1) setAyushStep(0);
+                      else setAyushStep(ayushStep - 1);
+                    }}
+                    className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>{t.backBtn}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (ayushStep === 12) {
+                        setStep(9); // Advance to Step 9 (Document Scan)
+                      } else {
+                        setAyushStep(ayushStep + 1);
+                      }
+                    }}
+                    className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-600/30 cursor-pointer active:scale-95"
+                  >
+                    <span>{ayushStep === 12 ? "Complete AYUSH & Next" : "Next Question"}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+              </div>
+            )}
+
+            {/* Back to Step 7 button if on intro */}
+            {ayushStep === 0 && (
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={() => setStep(7)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs flex items-center gap-1.5"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back to Medical History</span>
+                </button>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -1529,8 +1678,12 @@ export default function AccessiblePatientKiosk() {
               <button
                 type="button"
                 onClick={() => {
-                  if (medicalStream === "ayush") setStep(8);
-                  else setStep(7);
+                  if (medicalStream === "ayush") {
+                    setAyushStep(12);
+                    setStep(8);
+                  } else {
+                    setStep(7);
+                  }
                 }}
                 className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs flex items-center gap-1.5"
               >
@@ -1735,6 +1888,7 @@ export default function AccessiblePatientKiosk() {
                 type="button"
                 onClick={() => {
                   setStep(1);
+                  setAyushStep(0);
                   setPatientName("");
                   setPatientPhoto(null);
                   setUploadedDocuments([]);
@@ -1754,7 +1908,7 @@ export default function AccessiblePatientKiosk() {
       <footer className="max-w-5xl w-full mx-auto py-1 flex items-center justify-between text-[11px] text-red-300/60 border-t border-red-900/40">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-          <span>Self-Service Touch Station K-03 · Real Tesseract OCR & 10-Point AYUSH Dashavidha Active</span>
+          <span>Self-Service Touch Station K-03 · Conversational 1-Question AYUSH Flow Active</span>
         </div>
         <button
           type="button"
