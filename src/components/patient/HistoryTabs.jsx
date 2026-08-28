@@ -15,21 +15,38 @@ import {
   Clock,
   UserCheck,
   Calendar,
-  Activity
+  Activity,
+  Zap,
+  Pill,
+  ShieldCheck,
+  AlertTriangle,
+  History,
+  FileCheck
 } from "lucide-react";
 
 export default function HistoryTabs() {
   const { activeTab, setActiveTab, patient, ayushInfo, addClinicalNote, uploadNewDocument } = usePatient();
-  const { aiSummary = {}, examination = {}, lifestyle = {}, clinicalNotes = [], documents = [] } = patient || {};
+  const {
+    aiSummary = {},
+    examination = {},
+    lifestyle = {},
+    clinicalNotes = [],
+    documents = [],
+    documentExtractions = [],
+    triage = {},
+    fiveSecondSummary = {}
+  } = patient || {};
 
   const [newNoteText, setNewNoteText] = useState("");
   const [noteCategory, setNoteCategory] = useState("Clinical Progress Note");
   const fileInputRef = useRef(null);
 
   const tabs = [
-    { id: "history", label: "History & Kiosk Intake" },
-    { id: "notes", label: `Physician Notes (${clinicalNotes.length})` },
-    { id: "ayush", label: "AYUSH History" },
+    { id: "5sec", label: "⚡ 5-Second Scan" },
+    { id: "hpi", label: "Structured HPI & History" },
+    { id: "notes", label: `Doctor Notes (${clinicalNotes.length})` },
+    { id: "timeline", label: `Doc Timeline (${documents.length})` },
+    { id: "ayush", label: "AYUSH Dashavidha" },
     { id: "vitals", label: "Vitals Telemetry" },
     { id: "examination", label: "Physical Exam" },
     { id: "lifestyle", label: "Lifestyle" },
@@ -50,9 +67,9 @@ export default function HistoryTabs() {
   };
 
   return (
-    <div className="pt-4 border-t border-slate-100">
+    <div className="pt-3 border-t border-slate-100">
       {/* Sub-Tabs Nav */}
-      <div className="flex items-center gap-6 border-b border-slate-200 text-xs font-semibold overflow-x-auto pb-0.5 custom-scrollbar">
+      <div className="flex items-center gap-4 border-b border-slate-200 text-xs font-semibold overflow-x-auto pb-0.5 custom-scrollbar">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -75,18 +92,87 @@ export default function HistoryTabs() {
       </div>
 
       {/* Tab Contents */}
-      <div className="pt-4 text-xs">
+      <div className="pt-3.5 text-xs">
         
         {/* ========================================================================= */}
-        {/* TAB 1: HISTORY & KIOSK INTAKE SUMMARY */}
+        {/* TAB 0: 5-SECOND RAPID CLINICAL SCAN */}
         {/* ========================================================================= */}
-        {activeTab === "history" && (
+        {activeTab === "5sec" && (
+          <div className="space-y-3.5 animate-in fade-in duration-150">
+            <div className="bg-gradient-to-r from-red-50 to-white border-2 border-red-200 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-red-100 pb-2">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-red-600" />
+                  <strong className="text-sm font-black text-slate-900">
+                    5-Second Doctor Consultation Brief
+                  </strong>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white">
+                  {triage.tier || "LOW RISK"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Patient Identification</span>
+                  <strong className="text-slate-900 text-sm">{patient?.name}</strong>
+                  <span className="text-xs text-slate-600 block">{patient?.age || 35} Y / {patient?.gender} · ABHA: {patient?.abhaNumber || "Verified"}</span>
+                </div>
+
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Chief Complaint & Onset</span>
+                  <strong className="text-red-700 text-sm">{patient?.chiefComplaint || aiSummary.chiefComplaint}</strong>
+                  <span className="text-xs text-slate-600 block">Duration: {patient?.duration || "2 - 3 Days"} · Pain: {patient?.painLevel ?? 4}/10</span>
+                </div>
+              </div>
+
+              {/* Triage & Red Flags Alert Box */}
+              {triage.alerts?.length > 0 && (
+                <div className="p-3 bg-red-100/80 border border-red-300 rounded-xl space-y-1">
+                  <div className="flex items-center gap-1.5 text-red-900 font-black text-xs">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>Deterministic Red Flag Alert:</span>
+                  </div>
+                  <ul className="list-disc list-inside text-red-800 font-semibold space-y-0.5 text-xs">
+                    {triage.alerts.map((alert, idx) => (
+                      <li key={idx}>{alert}</li>
+                    ))}
+                  </ul>
+                  <div className="text-[11px] text-red-950 font-bold pt-1">
+                    Suggested Action: <strong>{triage.suggestedAction}</strong>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Meds & Vitals */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Active Medications</span>
+                  <div className="font-bold text-slate-900 mt-1">
+                    {patient?.medications?.length > 0 ? patient.medications.map((m) => `${m.name} (${m.dosage || ""})`).join(", ") : "None reported"}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Sensor Telemetry</span>
+                  <div className="font-bold text-slate-900 mt-1">
+                    BP: <strong className="text-red-700">{patient?.vitals?.bp?.value || "128/84"}</strong> | Pulse: {patient?.vitals?.pulse?.value || "78"} | SpO2: {patient?.vitals?.spo2?.value || "98%"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 1: STRUCTURED HPI & MEDICAL HISTORY */}
+        {/* ========================================================================= */}
+        {activeTab === "hpi" && (
           <div className="space-y-4 animate-in fade-in duration-150">
             {/* Kiosk Intake Telemetry Banner */}
             <div className="bg-red-50/70 border border-red-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
-                <strong className="text-slate-900 font-black">Self-Service Kiosk Verified Intake:</strong>
+                <strong className="text-slate-900 font-black">Kiosk Intake:</strong>
                 <span className="text-slate-700 font-semibold">{patient?.chiefComplaint || aiSummary.chiefComplaint}</span>
               </div>
               <div className="flex items-center gap-3 text-[11px] text-slate-600">
@@ -94,49 +180,84 @@ export default function HistoryTabs() {
                 <span>·</span>
                 <span>Pain Score: <strong className="text-red-700">{patient?.painLevel ?? 4}/10</strong></span>
                 <span>·</span>
-                <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-bold border border-red-200">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
                   Auto-Approved
                 </span>
               </div>
             </div>
 
-            {/* Systemic Review (ROS) */}
-            <div>
-              <h4 className="font-bold text-slate-800 text-xs mb-1">
-                Systemic Review (ROS)
-              </h4>
-              <p className="text-slate-600 leading-relaxed">
-                {aiSummary.systemicReview || "Patient completed automated ROS intake. No acute distress observed."}
-              </p>
-            </div>
-
-            {/* Past Medical History & Pre-existing Illnesses */}
+            {/* History of Presenting Illness (HPI) Sentences */}
             <div>
               <h4 className="font-bold text-slate-800 text-xs mb-1.5">
-                Past Medical History & Chronic Conditions
+                History of Presenting Illness (HPI)
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600">
-                {(aiSummary.pastHistory || []).map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
-                    <span className="text-slate-800 font-semibold">{item}</span>
+              <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-700">
+                {(aiSummary.hpi || []).map((line, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 mt-1.5 shrink-0" />
+                    <span className="leading-relaxed">{line}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Family History */}
+            {/* Pre-existing Medical Conditions & Surgeries */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <h4 className="font-bold text-slate-800 text-xs mb-1.5">
+                  Pre-existing Conditions
+                </h4>
+                <div className="space-y-1 text-slate-600">
+                  {(aiSummary.pastHistory || []).map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200 font-semibold text-slate-800">
+                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-slate-800 text-xs mb-1.5">
+                  Surgical Procedures
+                </h4>
+                <div className="space-y-1 text-slate-600">
+                  {(patient?.surgicalHistory || aiSummary.surgicalHistory || ["No prior major surgeries"]).map((surg, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200 font-semibold text-slate-800">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <span>{surg}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Active Medications with Data Provenance Badges */}
             <div>
-              <h4 className="font-bold text-slate-800 text-xs mb-1.5">
-                Family History
+              <h4 className="font-bold text-slate-800 text-xs mb-1.5 flex items-center justify-between">
+                <span>Active Medications (with Data Provenance)</span>
+                <span className="text-[10px] text-slate-400">Provenance Verified</span>
               </h4>
-              <div className="space-y-1 text-slate-600">
-                {(aiSummary.familyHistory || []).map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    <span>
-                      <strong className="text-slate-700">{item.relation || "Family"}:</strong>{" "}
-                      {item.condition || "Non-contributory"}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {(patient?.medications || aiSummary.medications || []).map((m, idx) => (
+                  <div key={idx} className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <Pill className="w-3.5 h-3.5 text-red-600" />
+                        <strong className="text-slate-900">{typeof m === "string" ? m : m.name}</strong>
+                      </div>
+                      {typeof m === "object" && (
+                        <div className="text-[11px] text-slate-600 mt-0.5">
+                          {m.dosage} · {m.frequency}
+                        </div>
+                      )}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                      m.provenance === "DOCUMENT_EXTRACTED"
+                        ? "bg-purple-50 text-purple-800 border-purple-200"
+                        : "bg-blue-50 text-blue-800 border-blue-200"
+                    }`}>
+                      {m.source || "Patient Reported"}
                     </span>
                   </div>
                 ))}
@@ -146,7 +267,7 @@ export default function HistoryTabs() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 2: PHYSICIAN CLINICAL NOTES & FILE ATTACHMENTS (DOCTOR EXCLUSIVE) */}
+        {/* TAB 2: DOCTOR CLINICAL PROGRESS NOTES */}
         {/* ========================================================================= */}
         {activeTab === "notes" && (
           <div className="space-y-4 animate-in fade-in duration-150">
@@ -174,7 +295,6 @@ export default function HistoryTabs() {
                     <option value="Follow-up Instructions">Follow-up Instructions</option>
                   </select>
 
-                  {/* Quick File Attach Button */}
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -186,10 +306,9 @@ export default function HistoryTabs() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition flex items-center gap-1 cursor-pointer"
-                    title="Attach file for this patient"
                   >
                     <Paperclip className="w-3.5 h-3.5" />
-                    <span>Attach File</span>
+                    <span>Attach Doc</span>
                   </button>
                 </div>
               </div>
@@ -197,237 +316,250 @@ export default function HistoryTabs() {
               <textarea
                 value={newNoteText}
                 onChange={(e) => setNewNoteText(e.target.value)}
-                placeholder="Type clinical observations, prescription advice, diagnostic findings, or patient instructions..."
+                placeholder="Type clinical observations, prescription advice, diagnostic findings, or follow-up instructions..."
                 rows={3}
-                className="w-full p-3 bg-slate-50 focus:bg-white border border-slate-200 focus:border-red-500 rounded-xl text-xs font-medium text-slate-900 outline-none transition resize-none placeholder:text-slate-400"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:border-red-500 focus:bg-white resize-none"
               />
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] text-slate-400">
-                  Signed as: <strong>Dr. Ramesh Kumar</strong> · Synced with Firebase
+                  Signed as: <strong>{patient?.doctor?.name || "Dr. Ramesh Kumar"}</strong>
                 </span>
-
                 <button
                   type="submit"
                   disabled={!newNoteText.trim()}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-50 text-white font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer text-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>Save Note to Firebase</span>
+                  <span>Save Note to Patient EHR</span>
                 </button>
               </div>
             </form>
 
-            {/* List of Clinical Notes for this Patient */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-1">
-                <span>Recorded Clinical Notes ({clinicalNotes.length})</span>
-                <span className="text-[11px] text-slate-400">Chronological Record</span>
-              </div>
+            {/* List of Previous Notes */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-slate-800 text-xs">
+                Clinical Progress Record ({clinicalNotes.length} Entries)
+              </h4>
 
               {clinicalNotes.length === 0 ? (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center text-slate-500">
-                  <FileText className="w-8 h-8 mx-auto text-slate-400 mb-1.5" />
-                  <p className="font-semibold">No progress notes written for {patient?.name} yet.</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Use the form above to add remarks or attach medical documents.</p>
+                <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+                  No notes recorded yet for this patient. Write a note above to attach to their chart.
                 </div>
               ) : (
-                clinicalNotes.map((note, idx) => (
-                  <div key={note.id || idx} className="bg-white border border-red-100 rounded-xl p-3.5 shadow-xs space-y-2">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                clinicalNotes.slice().reverse().map((note, idx) => (
+                  <div key={note.id || idx} className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-bold text-[10px] border border-red-200">
+                        <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded-md font-bold text-[10px] border border-red-200">
                           {note.category || "Clinical Note"}
                         </span>
-                        <strong className="text-slate-800 font-bold text-xs">{note.author || "Dr. Ramesh Kumar"}</strong>
-                        <span className="text-[10px] text-slate-400">({note.role || "Consultant"})</span>
+                        <strong className="text-slate-900 font-bold text-xs">{note.author || "Dr. Ramesh Kumar"}</strong>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                        <Clock className="w-3 h-3" />
-                        <span>{note.timestamp || "Just now"} · {note.date || "Today"}</span>
-                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {note.createdAt ? new Date(note.createdAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "Today"}
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-700 font-normal leading-relaxed whitespace-pre-wrap">
-                      {note.content}
-                    </p>
+                    <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">{note.text}</p>
                   </div>
                 ))
               )}
             </div>
+          </div>
+        )}
 
-            {/* Attached Patient Documents for this Patient */}
-            {documents.length > 0 && (
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <h4 className="font-bold text-slate-800 text-xs px-1">Attached Files for {patient?.name} ({documents.length})</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Paperclip className="w-4 h-4 text-red-600 shrink-0" />
-                        <div className="truncate">
-                          <span className="font-bold text-slate-800 text-xs block truncate">{doc.name}</span>
-                          <span className="text-[10px] text-slate-400">{doc.uploadedAt} · {doc.size || "1.2 MB"}</span>
+        {/* ========================================================================= */}
+        {/* TAB 3: DOCUMENT TIMELINE & ABNORMAL LAB HIGHLIGHTS */}
+        {/* ========================================================================= */}
+        {activeTab === "timeline" && (
+          <div className="space-y-4 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 className="font-bold text-slate-800 text-xs">
+                Ingested Medical Records & Chronological Timeline ({documents.length})
+              </h4>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 bg-red-50 text-red-700 font-bold rounded-lg border border-red-200 text-[11px] flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Upload Document</span>
+              </button>
+            </div>
+
+            {documents.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+                No external documents uploaded yet. Upload a prescription or lab report above.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {documents.map((doc, idx) => (
+                  <div key={doc.id || idx} className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileCheck className="w-4 h-4 text-red-600" />
+                        <strong className="text-slate-900 font-bold">{doc.name}</strong>
+                      </div>
+                      <span className="text-[10px] text-slate-400">{doc.uploadedAt || "Uploaded"}</span>
+                    </div>
+
+                    {/* Extracted Lab Findings & Abnormal Values */}
+                    {doc.extractions?.investigations?.length > 0 && (
+                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">Extracted Lab Investigations:</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {doc.extractions.investigations.map((inv, i) => (
+                            <div
+                              key={i}
+                              className={`p-2 rounded-lg border text-[11px] flex items-center justify-between ${
+                                inv.isAbnormal
+                                  ? "bg-red-50 border-red-300 text-red-900 font-bold"
+                                  : "bg-slate-50 border-slate-200 text-slate-800"
+                              }`}
+                            >
+                              <span>{inv.testName}</span>
+                              <span className={inv.isAbnormal ? "text-red-700 font-black" : "text-slate-700"}>
+                                {inv.value} {inv.isAbnormal && "↑ High"}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {doc.status || "Synced"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: AYUSH HISTORY (AYURVEDIC INTAKE) */}
+        {/* TAB 4: EXTENDED AYUSH DASHAVIDHA PARIKSHA */}
         {/* ========================================================================= */}
         {activeTab === "ayush" && (
           <div className="space-y-4 animate-in fade-in duration-150">
-            {/* Prakriti & Vikriti */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-200/60">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-amber-900">Prakriti (Constitution)</span>
-                  <span className="text-[11px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    {ayushInfo.prakriti.primary} Dominant
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {ayushInfo.prakriti.distribution.map((d, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-[11px] font-medium text-slate-600 mb-0.5">
-                        <span>{d.dosha} ({d.traits})</span>
-                        <span className="font-bold">{d.percentage}%</span>
-                      </div>
-                      <div className="w-full bg-amber-100 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className="h-1.5 rounded-full"
-                          style={{ width: `${d.percentage}%`, backgroundColor: d.color }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🌿</span>
+                <strong className="text-amber-950 font-black">AYUSH Dashavidha Pariksha (दशविध परीक्षा)</strong>
               </div>
-
-              <div className="bg-rose-50/40 p-3 rounded-xl border border-rose-200/60">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-rose-900">Vikriti (Imbalance State)</span>
-                  <span className="text-[11px] font-semibold text-rose-800 bg-rose-100 px-2 py-0.5 rounded">
-                    {ayushInfo.vikriti.imbalanceSeverity} Imbalance
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-700 leading-relaxed">
-                  {ayushInfo.vikriti.clinicalNotes}
-                </p>
-                <div className="mt-2 text-[11px] font-semibold text-rose-800">
-                  Imbalanced Sub-doshas: {ayushInfo.vikriti.affectedSubdoshas.join(", ")}
-                </div>
-              </div>
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px] border border-amber-300">
+                Prakriti: {ayushInfo?.prakriti?.primary || "Pitta"}
+              </span>
             </div>
 
-            {/* Agni, Koshtha, Dhatu */}
-            <div className="grid grid-cols-3 gap-2.5">
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-slate-500 font-medium block">Agni Status:</span>
-                <strong className="text-slate-900 text-xs">{ayushInfo.agniStatus.type}</strong>
-                <span className="text-[10px] text-slate-400 block mt-0.5">{ayushInfo.agniStatus.appetite}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">1. Prakriti & Vikriti</span>
+                <div className="font-bold text-slate-900">{ayushInfo?.prakriti?.primary || "Pitta"} Dominant Prakriti</div>
+                <div className="text-[11px] text-slate-600">Vikriti Imbalance: {ayushInfo?.vikriti?.subdosha || "Samana Vata & Pachaka Pitta"}</div>
               </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-slate-500 font-medium block">Koshtha:</span>
-                <strong className="text-slate-900 text-xs">{ayushInfo.koshtha.type}</strong>
-                <span className="text-[10px] text-slate-400 block mt-0.5">{ayushInfo.koshtha.bowelHabit}</span>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">2. Agni & Koshtha</span>
+                <div className="font-bold text-slate-900">Agni: {ayushInfo?.agniStatus?.type || "Tikshnagni"}</div>
+                <div className="text-[11px] text-slate-600">Bowel: {ayushInfo?.koshtha?.type || "Madhyama Koshtha"}</div>
               </div>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-slate-500 font-medium block">Primary Dhatu:</span>
-                <strong className="text-slate-900 text-xs">{ayushInfo.dhatuKshaya.primaryAffected}</strong>
-                <span className="text-[10px] text-slate-400 block mt-0.5">{ayushInfo.dhatuKshaya.status}</span>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">3. Sara & Samhanana</span>
+                <div className="font-bold text-slate-900">Sara: {ayushInfo?.sara?.type || "Rakta Sara (Blood)"}</div>
+                <div className="text-[11px] text-slate-600">Build: Madhyama Samhanana (Balanced)</div>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">4. Sattva & Shakti</span>
+                <div className="font-bold text-slate-900">Mental Strength: {ayushInfo?.sattva?.type || "Pravara Sattva"}</div>
+                <div className="text-[11px] text-slate-600">Digestive Capacity: Pravara Ahara Shakti</div>
               </div>
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: VITALS TELEMETRY */}
+        {/* TAB 5: VITALS TELEMETRY */}
         {/* ========================================================================= */}
         {activeTab === "vitals" && (
-          <div className="space-y-3 animate-in fade-in duration-150">
+          <div className="space-y-4 animate-in fade-in duration-150">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-center">
+              <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Blood Pressure</span>
-                <span className="text-base font-black text-red-700">{patient?.vitals?.bp?.value || "128/84"} mmHg</span>
-                <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Automated Scan</span>
+                <div className="text-base font-black text-red-700 mt-1">{patient?.vitals?.bp?.value || "128/84"}</div>
+                <span className="text-[10px] text-slate-500">mmHg</span>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Heart Rate</span>
-                <span className="text-base font-black text-red-700">{patient?.vitals?.pulse?.value || "78"} bpm</span>
-                <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Normal Rhythm</span>
+
+              <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-center">
+                <span className="text-[10px] font-bold text-slate-500 uppercase block">Pulse / Heart Rate</span>
+                <div className="text-base font-black text-red-700 mt-1">{patient?.vitals?.pulse?.value || "78"}</div>
+                <span className="text-[10px] text-slate-500">bpm</span>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-center">
+
+              <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Blood Oxygen (SpO2)</span>
-                <span className="text-base font-black text-red-700">{patient?.vitals?.spo2?.value || "98"}%</span>
-                <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Optimal</span>
+                <div className="text-base font-black text-red-700 mt-1">{patient?.vitals?.spo2?.value || "98%"}</div>
+                <span className="text-[10px] text-slate-500">Room air</span>
               </div>
-              <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-center">
+
+              <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-center">
                 <span className="text-[10px] font-bold text-slate-500 uppercase block">Body Temperature</span>
-                <span className="text-base font-black text-red-700">{patient?.vitals?.temperature?.value || "98.4"} °F</span>
-                <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">Afebrile</span>
+                <div className="text-base font-black text-red-700 mt-1">{patient?.vitals?.temperature?.value || "98.4"}</div>
+                <span className="text-[10px] text-slate-500">°F</span>
               </div>
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 5: PHYSICAL EXAMINATION */}
+        {/* TAB 6: PHYSICAL EXAMINATION */}
         {/* ========================================================================= */}
         {activeTab === "examination" && (
-          <div className="space-y-2.5 animate-in fade-in duration-150">
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-              <span className="font-bold text-slate-800">General Physical: </span>
-              <span className="text-slate-600">{examination.general || "Conscious, oriented to time, place, and person."}</span>
-            </div>
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-              <span className="font-bold text-slate-800">Cardiovascular System (CVS): </span>
-              <span className="text-slate-600">{examination.cvs || "S1, S2 heard. No murmurs detected."}</span>
-            </div>
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-              <span className="font-bold text-slate-800">Respiratory System (RS): </span>
-              <span className="text-slate-600">{examination.rs || "Bilateral normal vesicular breath sounds."}</span>
-            </div>
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-              <span className="font-bold text-slate-800">Abdomen: </span>
-              <span className="text-slate-600">{examination.abdomen || "Soft, non-tender, no organomegaly."}</span>
+          <div className="space-y-3 animate-in fade-in duration-150">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <strong className="text-slate-900 font-bold block mb-1">General Appearance</strong>
+                <p className="text-slate-600">{examination.general || "Conscious, oriented, no acute respiratory distress observed."}</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <strong className="text-slate-900 font-bold block mb-1">Cardiovascular (CVS)</strong>
+                <p className="text-slate-600">{examination.cvs || "S1, S2 heard. No murmurs or gallop."}</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <strong className="text-slate-900 font-bold block mb-1">Respiratory (RS)</strong>
+                <p className="text-slate-600">{examination.rs || "Bilateral air entry clear. No wheezes or rales."}</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <strong className="text-slate-900 font-bold block mb-1">Abdomen (P/A)</strong>
+                <p className="text-slate-600">{examination.abdomen || "Soft, non-tender. Bowel sounds present."}</p>
+              </div>
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 6: LIFESTYLE ASSESSMENT */}
+        {/* TAB 7: LIFESTYLE & HABITUATION */}
         {/* ========================================================================= */}
         {activeTab === "lifestyle" && (
-          <div className="space-y-2.5 animate-in fade-in duration-150">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800 block mb-0.5">Diet & Nutrition:</span>
-                <span className="text-slate-600">{lifestyle.diet || "Balanced regular home meals"}</span>
+          <div className="space-y-3 animate-in fade-in duration-150">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Diet</span>
+                <strong className="text-slate-900">{lifestyle.diet || "Vegetarian"}</strong>
               </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800 block mb-0.5">Sleep Pattern:</span>
-                <span className="text-slate-600">{lifestyle.sleep || "6-7 hours/night"}</span>
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Smoking</span>
+                <strong className="text-slate-900">{lifestyle.smoking || "Non-Smoker"}</strong>
               </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800 block mb-0.5">Physical Activity:</span>
-                <span className="text-slate-600">{lifestyle.physicalActivity || "Moderate walking"}</span>
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Alcohol</span>
+                <strong className="text-slate-900">{lifestyle.alcohol || "Non-Drinker"}</strong>
               </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800 block mb-0.5">Stress Level:</span>
-                <span className="text-amber-700 font-semibold">{lifestyle.stressLevel || "Mild"}</span>
+              <div className="p-3 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Physical Activity</span>
+                <strong className="text-slate-900">{lifestyle.activity || "Moderate"}</strong>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

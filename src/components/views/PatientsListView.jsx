@@ -17,7 +17,7 @@ import {
 import { usePatient } from "../../context/PatientContext";
 
 export default function PatientsListView() {
-  const { patientsList, samplePatientsList, setSelectedPatientId, setActiveNav, downloadPatientData } = usePatient();
+  const { patientsList, samplePatientsList, setSelectedPatientId, setActiveNav, downloadPatientData, downloadFhir } = usePatient();
 
   const [searchQuery, setSearchQuery] = useState("");
   const patients = (patientsList && patientsList.length > 0) ? patientsList : (samplePatientsList || []);
@@ -49,7 +49,7 @@ export default function PatientsListView() {
             <span>OPD Patient Directory (Auto-Approved)</span>
           </h2>
           <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Real-time roster of {patients.length} patients with instant clinician access, progress notes, and downloadable EHR records
+            Real-time roster of {patients.length} patients with deterministic triage, progress notes, and downloadable FHIR R4 & EHR records
           </p>
         </div>
 
@@ -84,9 +84,9 @@ export default function PatientsListView() {
               <tr>
                 <th className="p-3.5">Patient / Photo</th>
                 <th className="p-3.5">Age / Gender</th>
-                <th className="p-3.5">Chief Symptom & Specifics</th>
+                <th className="p-3.5">Chief Symptom</th>
+                <th className="p-3.5">Triage Severity</th>
                 <th className="p-3.5">Vitals (BP/Pulse)</th>
-                <th className="p-3.5">Status</th>
                 <th className="p-3.5 text-right">Clinician Actions</th>
               </tr>
             </thead>
@@ -95,6 +95,7 @@ export default function PatientsListView() {
                 const complaintText = p.complaint || p.stats?.chiefComplaint?.value || p.aiSummary?.chiefComplaint || "General Consultation";
                 const abhaText = p.abha || p.abhaNumber || "91-XXXX-XXXX-0000";
                 const avatar = p.avatarUrl || p.photo || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80";
+                const triageTier = p.triage?.tier || "LOW";
 
                 return (
                   <tr key={p.id} className="hover:bg-red-50/30 transition">
@@ -124,6 +125,17 @@ export default function PatientsListView() {
                       </span>
                     </td>
                     <td className="p-3.5">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shadow-xs ${
+                        triageTier === "HIGH / PRIORITY" || triageTier === "HIGH"
+                          ? "bg-red-600 text-white border-red-700 animate-pulse"
+                          : triageTier === "MODERATE"
+                          ? "bg-amber-100 text-amber-900 border-amber-300"
+                          : "bg-emerald-100 text-emerald-900 border-emerald-300"
+                      }`}>
+                        {triageTier}
+                      </span>
+                    </td>
+                    <td className="p-3.5">
                       <div className="text-[11px] font-bold text-slate-800">
                         BP: <span className="text-red-700">{p.vitals?.bp?.value || "128/84"}</span>
                       </div>
@@ -131,14 +143,17 @@ export default function PatientsListView() {
                         Pulse: {p.vitals?.pulse?.value || "78"} bpm
                       </div>
                     </td>
-                    <td className="p-3.5">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        <ShieldCheck className="w-3 h-3 text-emerald-700" />
-                        Auto-Approved
-                      </span>
-                    </td>
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Download FHIR R4 Button */}
+                        <button
+                          onClick={() => downloadFhir(p)}
+                          className="p-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 rounded-lg transition cursor-pointer"
+                          title="Export HL7 FHIR R4 Bundle"
+                        >
+                          <span className="font-mono text-[10px] font-black">FHIR</span>
+                        </button>
+
                         {/* Download EHR Button */}
                         <button
                           onClick={() => downloadPatientData(p)}

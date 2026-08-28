@@ -1,5 +1,6 @@
 import React from "react";
 import PatientHeader from "../patient/PatientHeader";
+import FiveSecondSummaryBanner from "../patient/FiveSecondSummaryBanner";
 import QuickStatsRow from "../patient/QuickStatsRow";
 import PatientInfoCard from "../patient/PatientInfoCard";
 import PatientTimelineCard from "../patient/PatientTimelineCard";
@@ -15,7 +16,7 @@ export default function DashboardView() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-3">
-        <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
         <span className="text-sm font-semibold text-slate-600">Connecting to Firebase Realtime Database...</span>
       </div>
     );
@@ -37,7 +38,10 @@ export default function DashboardView() {
       {/* 1. Patient Subheader */}
       <PatientHeader />
 
-      {/* 2. Top Metric Stat Cards (5 across) */}
+      {/* 2. Primary 5-Second Rapid Clinical Scan Banner */}
+      <FiveSecondSummaryBanner />
+
+      {/* 3. Top Metric Stat Cards (5 across) */}
       <QuickStatsRow />
 
       {/* 3. Main 3-Column Content Layout */}

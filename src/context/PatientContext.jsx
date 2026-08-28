@@ -11,8 +11,11 @@ import {
   addDocumentToFirebase,
   addClinicalNoteToFirebase,
   updateVitalsInFirebase,
-  submitKioskIntakeToFirebase
+  submitKioskIntakeToFirebase,
+  downloadFhirBundle
 } from "../services/firebaseService";
+import { ocrService } from "../services/documents/ocrService";
+import { medicalExtractionService } from "../services/documents/medicalExtractionService";
 import { initialPatientData, samplePatientsList as defaultPatientsList, notificationsList } from "../data/mockData";
 import { ayushData } from "../data/ayushData";
 import { TRANSLATIONS, SUPPORTED_LANGUAGES } from "../data/translations";
@@ -256,23 +259,32 @@ export function PatientProvider({ children }) {
 
   const uploadNewDocument = async (file) => {
     if (!patient) return;
-    const newDoc = {
-      id: `doc-${Date.now()}`,
-      name: file.name || "Uploaded_Doc.pdf",
-      type: file.type?.includes("image") ? "image" : "pdf",
-      size: `${(file.size ? (file.size / (1024 * 1024)).toFixed(1) : "1.5")} MB`,
-      uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: "Processed",
-      category: "Patient Upload",
-      previewContent: {
-        hospital: "AIIMS Ingest Engine",
-        notes: `Extracted text from ${file.name || "document"}.`
-      }
-    };
-
     try {
+      const ocrResult = await ocrService.extractTextFromDocument(file);
+      const extractions = medicalExtractionService.extractMedicalEntities(ocrResult.rawText, {
+        id: `doc-${Date.now()}`,
+        name: file.name,
+        uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      const newDoc = {
+        id: `doc-${Date.now()}`,
+        name: file.name || "Uploaded_Doc.pdf",
+        type: file.type?.includes("image") ? "image" : "pdf",
+        size: `${(file.size ? (file.size / (1024 * 1024)).toFixed(1) : "1.5")} MB`,
+        uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: extractions.hasAbnormalities ? "OCR: Abnormalities Found" : "OCR Processed",
+        category: "Patient Upload",
+        rawText: ocrResult.rawText,
+        extractions,
+        previewContent: {
+          hospital: "AIIMS Ingest & OCR Extraction Engine",
+          notes: `Extracted ${extractions.medications.length} meds, ${extractions.investigations.length} lab tests from ${file.name}.`
+        }
+      };
+
       await addDocumentToFirebase(patient.id, newDoc);
-      showToast(`"${newDoc.name}" saved to Firebase & processed via OCR.`, "success");
+      showToast(`"${newDoc.name}" digitized via OCR (${extractions.medications.length} meds, ${extractions.investigations.length} lab values extracted).`, "success");
     } catch (err) {
       console.error(err);
       showToast("Document upload failed.", "error");
@@ -362,6 +374,12 @@ export function PatientProvider({ children }) {
     }, 600);
   };
 
+  const downloadFhir = (targetPatient = patient) => {
+    if (!targetPatient) return;
+    downloadFhirBundle(targetPatient);
+    showToast(`HL7 FHIR R4 Bundle exported for ${targetPatient.name}!`, "success");
+  };
+
   const samplePatientsList = patientsList && patientsList.length > 0 ? patientsList : defaultPatientsList;
   const ayushInfo = patient?.ayush || ayushData;
 
@@ -425,6 +443,7 @@ export function PatientProvider({ children }) {
         uploadNewDocument,
         addClinicalNote,
         downloadPatientData,
+        downloadFhir,
         refreshVitals,
         submitKioskIntake,
         chatMessages,

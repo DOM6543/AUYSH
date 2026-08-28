@@ -157,6 +157,35 @@ export const TRANSLATIONS = {
     printSlipBtn: "Print Token Slip",
     nextPatientBtn: "Check in Next Patient",
 
+    consentPrompt: "Patient Data Collection & Clinical Processing Consent",
+    consentExplanation: "Your medical symptoms, photo, vital signs, and uploaded prescriptions will be organized in a structured format for your consulting doctor to accelerate your OPD visit under National Health guidelines.",
+    consentPoints: [
+      "Information is strictly used for clinical care during this hospital visit",
+      "Prior prescriptions & lab reports will be digitized via OCR for physician review",
+      "You may speak in your regional language or tap the screen at any time"
+    ],
+    consentAccept: "I Understand & Give Consent",
+    consentDecline: "Decline & Exit Kiosk",
+
+    voiceInputLabel: "Voice / Speech Input",
+    voiceListening: "Listening... Speak your symptoms clearly",
+    voiceStop: "Done Speaking",
+    touchOrVoiceHint: "You can speak your symptoms or tap the screen",
+
+    documentScanPrompt: "Scan / Upload Prior Medical Records & Prescriptions",
+    documentScanSub: "Photograph your prescription, discharge summary or lab report using the camera or upload a file",
+    takeDocPhotoBtn: "Photograph Document",
+    uploadDocBtn: "Upload File / PDF",
+    skipDocBtn: "No Prior Documents (Skip)",
+    extractedMedsLabel: "Extracted Medications & Doses",
+    extractedLabsLabel: "Extracted Lab Findings",
+
+    reviewStepTitle: "Review What You Told Us",
+    reviewStepSub: "Please check your symptom summary before generating your OPD Token Slip",
+    confirmSubmitBtn: "Confirm & Generate OPD Token",
+    editInfoBtn: "Make Corrections",
+    dataProvenanceLabel: "Data Source",
+
     nextBtn: "Next Step",
     backBtn: "Go Back",
     finishBtn: "Confirm & Generate Token",
